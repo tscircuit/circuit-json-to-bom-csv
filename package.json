@@ -1,0 +1,26 @@
+{
+  "name": "circuit-json-to-bom-csv",
+  "module": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "tsup-node ./lib/index.ts --format esm --dts --sourcemap"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.2",
+    "@types/bun": "latest",
+    "@types/papaparse": "^5.3.14",
+    "circuit-json": "^0.0.77",
+    "tsup": "^8.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "format-si-prefix": "^0.3.2",
+    "papaparse": "^5.4.1"
+  }
+}
