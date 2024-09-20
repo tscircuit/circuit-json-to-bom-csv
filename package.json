@@ -4,7 +4,7 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "scripts": {
     "build": "tsup-node ./lib/index.ts --format esm --dts --sourcemap",
