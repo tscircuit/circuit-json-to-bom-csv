@@ -80,8 +80,8 @@ export const convertCircuitJsonToBomRows = async ({
       value: comment,
       footprint: part_info.footprint || "",
       supplier_part_number_columns:
-        part_info.supplier_part_number_columns ??
-        source_component.supplier_part_numbers
+        (part_info.supplier_part_number_columns ??
+        source_component.supplier_part_numbers)
           ? convertSupplierPartNumbersIntoColumns(
               source_component.supplier_part_numbers,
             )
