@@ -64,6 +64,8 @@ export const convertCircuitJsonToBomRows = async ({
         e.source_component_id === elm.source_component_id,
     ) as any as SourceComponentBase
 
+    if (!source_component) continue
+
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
 
@@ -80,8 +82,8 @@ export const convertCircuitJsonToBomRows = async ({
       value: comment,
       footprint: part_info.footprint || "",
       supplier_part_number_columns:
-        part_info.supplier_part_number_columns ??
-        source_component.supplier_part_numbers
+        (part_info.supplier_part_number_columns ??
+        source_component.supplier_part_numbers)
           ? convertSupplierPartNumbersIntoColumns(
               source_component.supplier_part_numbers,
             )
