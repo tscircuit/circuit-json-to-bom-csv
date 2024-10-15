@@ -1,34 +1,39 @@
-import { expect, test, describe } from "bun:test";
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "./index";
-import type { AnyCircuitElement, PcbComponent, SourceComponentBase } from "circuit-json";
+import { expect, test, describe } from "bun:test"
+import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "./index"
+import type {
+  AnyCircuitElement,
+  PcbComponent,
+  SourceComponentBase,
+} from "circuit-json"
 
 describe("convertCircuitJsonToBomRows", () => {
   test("should convert circuit JSON to BOM rows", async () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
-        pcb_component_id: "R1",
-        source_component_id: "R1_source",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
       } as PcbComponent,
       {
         type: "source_component",
-        source_component_id: "R1_source",
+        source_component_id: "source_component_1",
+        name: "R1",
         ftype: "simple_resistor",
         resistance: 1000,
       } as SourceComponentBase,
-    ];
+    ] as AnyCircuitElement[]
 
-    const bomRows = await convertCircuitJsonToBomRows({ circuitJson });
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
 
-    expect(bomRows).toHaveLength(1);
+    expect(bomRows).toHaveLength(1)
     expect(bomRows[0]).toEqual({
       designator: "R1",
       comment: "1k",
       value: "1k",
       footprint: "",
-    });
-  });
-});
+    })
+  })
+})
 
 describe("convertBomRowsToCsv", () => {
   test("should convert BOM rows to CSV", () => {
@@ -42,12 +47,12 @@ describe("convertBomRowsToCsv", () => {
           "JLCPCB Part#": "C17513",
         },
       },
-    ];
+    ]
 
-    const csv = convertBomRowsToCsv(bomRows);
+    const csv = convertBomRowsToCsv(bomRows)
 
     expect(csv).toBe(
-      "Designator,Comment,Value,Footprint,JLCPCB Part#\r\nR1,1k,1k,0805,C17513"
-    );
-  });
-});
+      "Designator,Comment,Value,Footprint,JLCPCB Part#\r\nR1,1k,1k,0805,C17513",
+    )
+  })
+})
