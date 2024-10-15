@@ -23,37 +23,37 @@ This package provides two main functions: `convertCircuitJsonToBomRows` and `con
 ### Converting Circuit JSON to BOM Rows
 
 ```typescript
-import { convertCircuitJsonToBomRows } from 'circuit-json-to-bom-csv';
-import type { AnyCircuitElement } from 'circuit-json';
+import { convertCircuitJsonToBomRows } from "circuit-json-to-bom-csv"
+import type { AnyCircuitElement } from "circuit-json"
 
 const circuitJson: AnyCircuitElement[] = [
   // Your circuit JSON data here
-];
+]
 
-const bomRows = await convertCircuitJsonToBomRows({ circuitJson });
-console.log(bomRows);
+const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+console.log(bomRows)
 ```
 
 ### Converting BOM Rows to CSV
 
 ```typescript
-import { convertBomRowsToCsv } from 'circuit-json-to-bom-csv';
+import { convertBomRowsToCsv } from "circuit-json-to-bom-csv"
 
 const bomRows = [
   {
-    designator: 'R1',
-    comment: '1k',
-    value: '1k',
-    footprint: '0805',
+    designator: "R1",
+    comment: "1k",
+    value: "1k",
+    footprint: "0805",
     supplier_part_number_columns: {
-      'JLCPCB Part#': 'C17513',
+      "JLCPCB Part #": "C17513",
     },
   },
   // More BOM rows...
-];
+]
 
-const csv = convertBomRowsToCsv(bomRows);
-console.log(csv);
+const csv = convertBomRowsToCsv(bomRows)
+console.log(csv)
 ```
 
 ## API Reference
