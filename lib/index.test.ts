@@ -44,7 +44,7 @@ describe("convertBomRowsToCsv", () => {
         value: "1k",
         footprint: "0805",
         supplier_part_number_columns: {
-          "JLCPCB Part#": "C17513",
+          "JLCPCB Part #": "C17513",
         },
       },
     ]
@@ -52,7 +52,7 @@ describe("convertBomRowsToCsv", () => {
     const csv = convertBomRowsToCsv(bomRows)
 
     expect(csv).toBe(
-      "Designator,Comment,Value,Footprint,JLCPCB Part#\r\nR1,1k,1k,0805,C17513",
+      "Designator,Comment,Value,Footprint,JLCPCB Part #\r\nR1,1k,1k,0805,C17513",
     )
   })
 })

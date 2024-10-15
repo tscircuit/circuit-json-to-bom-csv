@@ -11,7 +11,7 @@ import { formatSI } from "format-si-prefix"
 
 import Papa from "papaparse"
 
-type SupplierPartNumberColumn = "JLCPCB Part#"
+type SupplierPartNumberColumn = "JLCPCB Part #"
 
 interface BomRow {
   designator: string
@@ -41,7 +41,7 @@ interface ResolvedPart {
 }
 
 // HEADERS FROM DIFFERENT bom.csv FILES
-// Comment Designator Footprint "JLCPCB Part#(optional)"
+// Comment Designator Footprint "JLCPCB Part #(optional)"
 // Designator Value Footprint Populate MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer
 
 export const convertCircuitJsonToBomRows = async ({
@@ -103,7 +103,7 @@ function convertSupplierPartNumbersIntoColumns(
   > = {}
 
   if (supplier_part_numbers?.jlcpcb) {
-    supplier_part_number_columns["JLCPCB Part#"] =
+    supplier_part_number_columns["JLCPCB Part #"] =
       supplier_part_numbers.jlcpcb[0]
   }
 
@@ -135,5 +135,19 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     }
   })
 
-  return Papa.unparse(csv_data)
+  const columnHeaders: string[] = [
+    "Designator",
+    "Comment",
+    "Value",
+    "Footprint",
+  ]
+  for (const row of csv_data) {
+    for (const key in row) {
+      if (!columnHeaders.includes(key)) {
+        columnHeaders.push(key)
+      }
+    }
+  }
+
+  return Papa.unparse(csv_data, { columns: columnHeaders })
 }
