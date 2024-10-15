@@ -77,7 +77,8 @@ export const convertCircuitJsonToBomRows = async ({
       comment = si((source_component as SourceSimpleCapacitor).capacitance)
 
     bom.push({
-      designator: elm.pcb_component_id,
+      // TODO, use designator from source_component when it's introduced
+      designator: source_component.name ?? elm.pcb_component_id,
       comment,
       value: comment,
       footprint: part_info.footprint || "",
