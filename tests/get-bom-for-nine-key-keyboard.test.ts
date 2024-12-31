@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "../lib/index"
+import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "../lib/circuitJsonToBomConverter"
 import nineKeyKeyboardCircuitJson from "./assets/nine-key-keyboard.json"
 
 test("get-bom-for-nine-key-keyboard", async () => {

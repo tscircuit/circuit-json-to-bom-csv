@@ -9,7 +9,7 @@
   "version": "0.0.6",
   "type": "module",
   "scripts": {
-    "build": "tsup-node ./lib/index.ts --format esm --dts --sourcemap",
+    "build": "tsup ./lib/index.ts --format esm --dts --sourcemap --outDir dist",
     "test": "bun test"
   },
   "devDependencies": {
@@ -23,6 +23,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@tscircuit/core": "^0.0.249",
     "format-si-prefix": "^0.3.2",
     "papaparse": "^5.4.1"
   }

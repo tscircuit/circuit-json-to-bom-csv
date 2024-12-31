@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "../lib/jlcpcb";
+import { convertCircuitJsonToBomRowsWithQuantities, convertBomRowsToCsvsWithQuantities } from "../lib/circuitJsonToBomConverterWithQuantities";
 import nineKeyKeyboardCircuitJson from "./assets/nine-key-keyboard.json";
 
 test("get-bom-for-nine-key-keyboard", async () => {
@@ -9,7 +9,7 @@ test("get-bom-for-nine-key-keyboard", async () => {
   );
 
   // Convert the circuit JSON to BOM rows
-  const bomRows = await convertCircuitJsonToBomRows({
+  const bomRows = await convertCircuitJsonToBomRowsWithQuantities({
     circuitJson: validCircuitJson as any,
     supplier_part_numbers: {}
   });
@@ -37,7 +37,7 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(diode?.supplier_part_number_columns?.["JLCPCB Part #"]).toBe("C57759");
 
   // Convert to CSV
-  const csv = convertBomRowsToCsv(bomRows);
+  const csv = convertBomRowsToCsvsWithQuantities(bomRows);
 
   // Check if CSV contains expected headers
   expect(csv).toContain("Designators,Comment,Value,Footprint,Quantity,JLCPCB Part #");
