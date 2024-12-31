@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "../../lib/circuitJsonToBomConverter"
+import {
+  convertCircuitJsonToBomRows,
+  convertBomRowsToCsv,
+} from "../../lib/circuitJsonToBomConverter"
 import type {
   AnyCircuitElement,
   PcbComponent,

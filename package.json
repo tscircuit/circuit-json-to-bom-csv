@@ -9,14 +9,14 @@
   "version": "0.0.6",
   "type": "module",
   "scripts": {
-    "build": "tsup ./lib/index.ts --format esm --dts --sourcemap --outDir dist",
+    "build": "tsup-node ./lib/index.ts --format esm --dts --sourcemap --outDir dist",
     "test": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
     "@types/bun": "latest",
     "@types/papaparse": "^5.3.14",
-    "circuit-json": "^0.0.77",
+    "circuit-json": "^0.0.125",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {
