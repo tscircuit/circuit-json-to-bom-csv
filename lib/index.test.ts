@@ -57,7 +57,7 @@ describe("convertCircuitJsonToBomRows", () => {
         },
       },
     ]
-  
+
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
     expect(csv).toBe(
