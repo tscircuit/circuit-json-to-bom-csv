@@ -60,9 +60,10 @@ describe("convertCircuitJsonToBomRows", () => {
 
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
-    expect(csv).toBe(
-      "Designator,Comment,Value,Footprint,JLCPCB Part #\r\nC1,10µ,10µ,,C12345",
-    )
+    expect(csv).toMatchInlineSnapshot(`
+      "Designator,Comment,Value,Footprint,JLCPCB Part #
+      C1,10µ,10µ,,C12345"
+    `)
   })
 })
 
@@ -82,8 +83,9 @@ describe("convertBomRowsToCsv", () => {
 
     const csv = convertBomRowsToCsv(bomRows)
 
-    expect(csv).toBe(
-      "Designator,Comment,Value,Footprint,JLCPCB Part #\r\nR1,1k,1k,0805,C17513",
-    )
+    expect(csv).toMatchInlineSnapshot(`
+      "Designator,Comment,Value,Footprint,JLCPCB Part #
+      R1,1k,1k,0805,C17513"
+    `)
   })
 })
