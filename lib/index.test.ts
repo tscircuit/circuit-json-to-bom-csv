@@ -33,6 +33,38 @@ describe("convertCircuitJsonToBomRows", () => {
       footprint: "",
     })
   })
+
+  test("should map lcsc to JLCPCB Part # when lcsc is present", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "C1",
+        source_component_id: "source_C1",
+        width: 2,
+        height: 1.5,
+        rotation: 0,
+        center: { x: 10, y: 5 },
+        layer: "top",
+      },
+      {
+        type: "source_component",
+        source_component_id: "source_C1",
+        name: "C1",
+        ftype: "simple_capacitor",
+        capacitance: 10e-6,
+        supplier_part_numbers: {
+          lcsc: ["C12345"],
+        },
+      },
+    ]
+
+    const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
+    const csv = convertBomRowsToCsv(bomRowsFromJson)
+    expect(csv).toMatchInlineSnapshot(`
+      "Designator,Comment,Value,Footprint,JLCPCB Part #
+      C1,10µ,10µ,,C12345"
+    `)
+  })
 })
 
 describe("convertBomRowsToCsv", () => {
@@ -51,8 +83,9 @@ describe("convertBomRowsToCsv", () => {
 
     const csv = convertBomRowsToCsv(bomRows)
 
-    expect(csv).toBe(
-      "Designator,Comment,Value,Footprint,JLCPCB Part #\r\nR1,1k,1k,0805,C17513",
-    )
+    expect(csv).toMatchInlineSnapshot(`
+      "Designator,Comment,Value,Footprint,JLCPCB Part #
+      R1,1k,1k,0805,C17513"
+    `)
   })
 })

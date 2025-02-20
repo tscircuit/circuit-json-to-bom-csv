@@ -107,6 +107,11 @@ function convertSupplierPartNumbersIntoColumns(
       supplier_part_numbers.jlcpcb[0]
   }
 
+  if (supplier_part_numbers?.lcsc) {
+    supplier_part_number_columns["JLCPCB Part #"] =
+      supplier_part_numbers.lcsc[0]
+  }
+
   return supplier_part_number_columns
 }
 
