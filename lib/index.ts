@@ -76,19 +76,22 @@ export const convertCircuitJsonToBomRows = async ({
     if (source_component.ftype === "simple_capacitor")
       comment = si((source_component as SourceSimpleCapacitor).capacitance)
 
+    const isDoNotPlace = Boolean(elm.do_not_place)
+
     bom.push({
       // TODO, use designator from source_component when it's introduced
       designator: source_component.name ?? elm.pcb_component_id,
-      comment,
-      value: comment,
+      comment: isDoNotPlace ? "DNP" : comment,
+      value: isDoNotPlace ? "DNP" : comment,
       footprint: part_info.footprint || "",
-      supplier_part_number_columns:
-        (part_info.supplier_part_number_columns ??
-        source_component.supplier_part_numbers)
-          ? convertSupplierPartNumbersIntoColumns(
-              source_component.supplier_part_numbers,
-            )
-          : undefined,
+      supplier_part_number_columns: isDoNotPlace
+        ? undefined
+        : part_info.supplier_part_number_columns ??
+            (source_component.supplier_part_numbers
+              ? convertSupplierPartNumbersIntoColumns(
+                  source_component.supplier_part_numbers,
+                )
+              : undefined),
     })
   }
 

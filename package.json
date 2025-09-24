@@ -16,7 +16,7 @@
     "@biomejs/biome": "^1.9.3",
     "@types/bun": "^1.2.2",
     "@types/papaparse": "^5.3.14",
-    "circuit-json": "^0.0.77",
+    "circuit-json": "^0.0.265",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {
