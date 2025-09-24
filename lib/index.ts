@@ -86,12 +86,12 @@ export const convertCircuitJsonToBomRows = async ({
       footprint: part_info.footprint || "",
       supplier_part_number_columns: isDoNotPlace
         ? undefined
-        : part_info.supplier_part_number_columns ??
-            (source_component.supplier_part_numbers
-              ? convertSupplierPartNumbersIntoColumns(
-                  source_component.supplier_part_numbers,
-                )
-              : undefined),
+        : (part_info.supplier_part_number_columns ??
+          (source_component.supplier_part_numbers
+            ? convertSupplierPartNumbersIntoColumns(
+                source_component.supplier_part_numbers,
+              )
+            : undefined)),
     })
   }
 
