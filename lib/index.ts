@@ -99,39 +99,7 @@ export const convertCircuitJsonToBomRows = async ({
     })
   }
 
-  // Group identical components
-  const groupedBom: BomRow[] = []
-  const groupMap = new Map<string, BomRow[]>()
-
-  for (const row of bom) {
-    const key = JSON.stringify({
-      comment: row.comment,
-      value: row.value,
-      footprint: row.footprint,
-      ftype: row.ftype,
-      supplier_part_number_columns: row.supplier_part_number_columns,
-      manufacturer_mpn_pairs: row.manufacturer_mpn_pairs,
-      extra_columns: row.extra_columns,
-    })
-
-    if (!groupMap.has(key)) {
-      groupMap.set(key, [])
-    }
-    groupMap.get(key)!.push(row)
-  }
-
-  for (const group of groupMap.values()) {
-    const first = group[0]
-    const designators = group.map((r) => r.designator).sort()
-    const designator = designators.join(",")
-    groupedBom.push({
-      ...first,
-      designator,
-      quantity: group.length,
-    })
-  }
-
-  return groupedBom
+  return bom
 }
 
 function convertSupplierPartNumbersIntoColumns(
