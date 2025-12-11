@@ -15,7 +15,10 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(microcontroller?.quantity).toBe(10)
 
   // Check keys (grouped)
-  const key = bomRows.find((row) => row.designator.includes("K1") && !row.designator.includes("_shaft"))
+  const key = bomRows.find(
+    (row) =>
+      row.designator.includes("K1") && !row.designator.includes("_shaft"),
+  )
   expect(key).toBeDefined()
   expect(key?.comment).toBe("")
   expect(key?.value).toBe("")
@@ -34,8 +37,12 @@ test("get-bom-for-nine-key-keyboard", async () => {
 
   // Convert to CSV
   const csv = convertBomRowsToCsv(bomRows)
-  expect(csv).toContain("Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #")
-  expect(csv).toContain("\"K1_shaft,K2_shaft,K3_shaft,K4_shaft,K5_shaft,K6_shaft,K7_shaft,K8_shaft,K9_shaft,U1\",,,,10,")
-  expect(csv).toContain("\"K1,K2,K3,K4,K5,K6,K7,K8,K9\",,,,9,C5184526")
-  expect(csv).toContain("\"D1,D2,D3,D4,D5,D6,D7,D8,D9\",,,,9,C57759")
+  expect(csv).toContain(
+    "Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #",
+  )
+  expect(csv).toContain(
+    '"K1_shaft,K2_shaft,K3_shaft,K4_shaft,K5_shaft,K6_shaft,K7_shaft,K8_shaft,K9_shaft,U1",,,,10,',
+  )
+  expect(csv).toContain('"K1,K2,K3,K4,K5,K6,K7,K8,K9",,,,9,C5184526')
+  expect(csv).toContain('"D1,D2,D3,D4,D5,D6,D7,D8,D9",,,,9,C57759')
 })
