@@ -18,6 +18,8 @@ interface BomRow {
   comment: string
   value: string
   footprint: string
+  quantity: number
+  ftype?: string
   supplier_part_number_columns?: Partial<
     Record<SupplierPartNumberColumn, string>
   >
@@ -84,6 +86,8 @@ export const convertCircuitJsonToBomRows = async ({
       comment: isDoNotPlace ? "DNP" : comment,
       value: isDoNotPlace ? "DNP" : comment,
       footprint: part_info.footprint || "",
+      quantity: 1,
+      ftype: source_component.ftype,
       supplier_part_number_columns: isDoNotPlace
         ? undefined
         : (part_info.supplier_part_number_columns ??
@@ -95,7 +99,39 @@ export const convertCircuitJsonToBomRows = async ({
     })
   }
 
-  return bom
+  // Group identical components
+  const groupedBom: BomRow[] = []
+  const groupMap = new Map<string, BomRow[]>()
+
+  for (const row of bom) {
+    const key = JSON.stringify({
+      comment: row.comment,
+      value: row.value,
+      footprint: row.footprint,
+      ftype: row.ftype,
+      supplier_part_number_columns: row.supplier_part_number_columns,
+      manufacturer_mpn_pairs: row.manufacturer_mpn_pairs,
+      extra_columns: row.extra_columns,
+    })
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, [])
+    }
+    groupMap.get(key)!.push(row)
+  }
+
+  for (const group of groupMap.values()) {
+    const first = group[0]
+    const designators = group.map((r) => r.designator).sort()
+    const designator = designators.join(",")
+    groupedBom.push({
+      ...first,
+      designator,
+      quantity: group.length,
+    })
+  }
+
+  return groupedBom
 }
 
 function convertSupplierPartNumbersIntoColumns(
@@ -139,6 +175,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
       Comment: row.comment,
       Value: row.value,
       Footprint: row.footprint,
+      Quantity: row.quantity,
       ...supplier_part_number_columns,
     }
   })
@@ -148,6 +185,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     "Comment",
     "Value",
     "Footprint",
+    "Quantity",
   ]
   for (const row of csv_data) {
     for (const key in row) {
