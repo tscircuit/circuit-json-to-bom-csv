@@ -12,12 +12,14 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(microcontroller).toBeDefined()
   expect(microcontroller?.comment).toBe("")
   expect(microcontroller?.value).toBe("")
+  expect(microcontroller?.quantity).toBe(1)
 
   // Check a key
   const key = bomRows.find((row) => row.designator === "K1")
   expect(key).toBeDefined()
   expect(key?.comment).toBe("")
   expect(key?.value).toBe("")
+  expect(key?.quantity).toBe(1)
   expect(key?.supplier_part_number_columns).toBeDefined()
   expect(key?.supplier_part_number_columns?.["JLCPCB Part #"]).toBe("C5184526")
 
@@ -26,13 +28,16 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(diode).toBeDefined()
   expect(diode?.comment).toBe("")
   expect(diode?.value).toBe("")
+  expect(diode?.quantity).toBe(1)
   expect(diode?.supplier_part_number_columns).toBeDefined()
   expect(diode?.supplier_part_number_columns?.["JLCPCB Part #"]).toBe("C57759")
 
   // Convert to CSV
   const csv = convertBomRowsToCsv(bomRows)
-  expect(csv).toContain("Designator,Comment,Value,Footprint,JLCPCB Part #")
-  expect(csv).toContain("U1,,,,")
-  expect(csv).toContain("K1,,,,C5184526")
-  expect(csv).toContain("D1,,,,C57759")
+  expect(csv).toContain(
+    "Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #",
+  )
+  expect(csv).toContain("U1,,,,1,")
+  expect(csv).toContain("K1,,,,1,C5184526")
+  expect(csv).toContain("D1,,,,1,C57759")
 })

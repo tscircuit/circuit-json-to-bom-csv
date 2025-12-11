@@ -18,6 +18,8 @@ interface BomRow {
   comment: string
   value: string
   footprint: string
+  quantity: number
+  ftype?: string
   supplier_part_number_columns?: Partial<
     Record<SupplierPartNumberColumn, string>
   >
@@ -84,6 +86,8 @@ export const convertCircuitJsonToBomRows = async ({
       comment: isDoNotPlace ? "DNP" : comment,
       value: isDoNotPlace ? "DNP" : comment,
       footprint: part_info.footprint || "",
+      quantity: 1,
+      ftype: source_component.ftype,
       supplier_part_number_columns: isDoNotPlace
         ? undefined
         : (part_info.supplier_part_number_columns ??
@@ -125,29 +129,32 @@ function si(v: string | number | undefined | null) {
 }
 
 export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
-  const csv_data = bom_rows.map((row) => {
-    const supplier_part_number_columns = row.supplier_part_number_columns
-    const supplier_part_numbers = Object.values(
-      supplier_part_number_columns || {},
-    ).join(", ")
-    const extraColumns = Object.entries(row.extra_columns || {})
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")
+  const csv_data: Array<Record<string, string | number | undefined>> =
+    bom_rows.map((row) => {
+      const supplier_part_number_columns = row.supplier_part_number_columns
+      const supplier_part_numbers = Object.values(
+        supplier_part_number_columns || {},
+      ).join(", ")
+      const extraColumns = Object.entries(row.extra_columns || {})
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ")
 
-    return {
-      Designator: row.designator,
-      Comment: row.comment,
-      Value: row.value,
-      Footprint: row.footprint,
-      ...supplier_part_number_columns,
-    }
-  })
+      return {
+        Designator: row.designator,
+        Comment: row.comment,
+        Value: row.value,
+        Footprint: row.footprint,
+        Quantity: row.quantity,
+        ...supplier_part_number_columns,
+      }
+    })
 
   const columnHeaders: string[] = [
     "Designator",
     "Comment",
     "Value",
     "Footprint",
+    "Quantity",
   ]
   for (const row of csv_data) {
     for (const key in row) {

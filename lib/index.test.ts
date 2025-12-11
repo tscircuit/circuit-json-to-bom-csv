@@ -31,6 +31,8 @@ describe("convertCircuitJsonToBomRows", () => {
       comment: "1k",
       value: "1k",
       footprint: "",
+      quantity: 1,
+      ftype: "simple_resistor",
     })
   })
 
@@ -61,8 +63,8 @@ describe("convertCircuitJsonToBomRows", () => {
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
     expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      C1,10µ,10µ,,C12345"
+      "Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #
+      C1,10µ,10µ,,1,C12345"
     `)
   })
 })
@@ -75,6 +77,7 @@ describe("convertBomRowsToCsv", () => {
         comment: "1k",
         value: "1k",
         footprint: "0805",
+        quantity: 1,
         supplier_part_number_columns: {
           "JLCPCB Part #": "C17513",
         },
@@ -84,8 +87,8 @@ describe("convertBomRowsToCsv", () => {
     const csv = convertBomRowsToCsv(bomRows)
 
     expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      R1,1k,1k,0805,C17513"
+      "Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #
+      R1,1k,1k,0805,1,C17513"
     `)
   })
 })
