@@ -77,6 +77,7 @@ describe("convertBomRowsToCsv", () => {
         comment: "1k",
         value: "1k",
         footprint: "0805",
+        quantity: 1,
         supplier_part_number_columns: {
           "JLCPCB Part #": "C17513",
         },
@@ -87,7 +88,7 @@ describe("convertBomRowsToCsv", () => {
 
     expect(csv).toMatchInlineSnapshot(`
       "Designator,Comment,Value,Footprint,Quantity,JLCPCB Part #
-      R1,1k,1k,0805,,C17513"
+      R1,1k,1k,0805,1,C17513"
     `)
   })
 })
