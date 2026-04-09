@@ -65,7 +65,8 @@ export const convertCircuitJsonToBomRows = async ({
     ) as any as SourceComponentBase
     const cad_component = circuitJson.find(
       (e) =>
-        e.type === "cad_component" && e.pcb_component_id === elm.pcb_component_id,
+        e.type === "cad_component" &&
+        e.pcb_component_id === elm.pcb_component_id,
     ) as any
 
     if (!source_component) continue
