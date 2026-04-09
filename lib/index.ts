@@ -63,6 +63,10 @@ export const convertCircuitJsonToBomRows = async ({
         e.type === "source_component" &&
         e.source_component_id === elm.source_component_id,
     ) as any as SourceComponentBase
+    const cad_component = circuitJson.find(
+      (e) =>
+        e.type === "cad_component" && e.pcb_component_id === elm.pcb_component_id,
+    ) as any
 
     if (!source_component) continue
 
@@ -83,7 +87,7 @@ export const convertCircuitJsonToBomRows = async ({
       designator: source_component.name ?? elm.pcb_component_id,
       comment: isDoNotPlace ? "DNP" : comment,
       value: isDoNotPlace ? "DNP" : comment,
-      footprint: part_info.footprint || "",
+      footprint: part_info.footprint || cad_component?.footprinter_string || "",
       supplier_part_number_columns: isDoNotPlace
         ? undefined
         : (part_info.supplier_part_number_columns ??
