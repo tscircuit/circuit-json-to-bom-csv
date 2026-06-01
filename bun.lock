@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "circuit-json-to-bom-csv",
@@ -8,7 +9,7 @@
         "papaparse": "^5.4.1",
       },
       "devDependencies": {
-        "@biomejs/biome": "^1.9.3",
+        "@biomejs/biome": "^1.9.4",
         "@types/bun": "^1.2.2",
         "@types/papaparse": "^5.3.14",
         "circuit-json": "^0.0.265",

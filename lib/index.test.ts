@@ -1,10 +1,10 @@
-import { expect, test, describe } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "./index"
+import { describe, expect, test } from "bun:test"
 import type {
   AnyCircuitElement,
   PcbComponent,
   SourceComponentBase,
 } from "circuit-json"
+import { convertBomRowsToCsv, convertCircuitJsonToBomRows } from "./index"
 
 describe("convertCircuitJsonToBomRows", () => {
   test("should convert circuit JSON to BOM rows", async () => {
@@ -32,6 +32,71 @@ describe("convertCircuitJsonToBomRows", () => {
       value: "1k",
       footprint: "",
     })
+  })
+
+  test("should filter out non-placeable components (vias, bare pads)", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "R1",
+        ftype: "simple_resistor",
+        resistance: 100,
+      } as SourceComponentBase,
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_6",
+        source_component_id: "source_component_6",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_6",
+        name: "pcb_component_6",
+      } as any,
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_7",
+        source_component_id: "source_component_7",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_7",
+        name: "pcb_component_7",
+      } as any,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toHaveLength(1)
+    expect(bomRows[0].designator).toBe("R1")
+  })
+
+  test("should include footprint from source_component props", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "R1",
+        ftype: "simple_resistor",
+        resistance: 56,
+        footprint: "0603",
+      } as any,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toHaveLength(1)
+    expect(bomRows[0].footprint).toBe("0603")
   })
 
   test("should map lcsc to JLCPCB Part # when lcsc is present", async () => {
