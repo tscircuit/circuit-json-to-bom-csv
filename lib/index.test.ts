@@ -1,10 +1,10 @@
-import { expect, test, describe } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "./index"
+import { describe, expect, test } from "bun:test"
 import type {
   AnyCircuitElement,
   PcbComponent,
   SourceComponentBase,
 } from "circuit-json"
+import { convertBomRowsToCsv, convertCircuitJsonToBomRows } from "./index"
 
 describe("convertCircuitJsonToBomRows", () => {
   test("should convert circuit JSON to BOM rows", async () => {
@@ -28,6 +28,7 @@ describe("convertCircuitJsonToBomRows", () => {
     expect(bomRows).toHaveLength(1)
     expect(bomRows[0]).toEqual({
       designator: "R1",
+      quantity: 1,
       comment: "1k",
       value: "1k",
       footprint: "",
@@ -61,9 +62,69 @@ describe("convertCircuitJsonToBomRows", () => {
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
     expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      C1,10µ,10µ,,C12345"
+      "Designator,Quantity,Comment,Value,Footprint,JLCPCB Part #
+      C1,1,10µ,10µ,,C12345"
     `)
+  })
+
+  test("should combine matching parts and count quantity", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_2",
+        source_component_id: "source_component_2",
+      } as PcbComponent,
+      {
+        type: "cad_component",
+        pcb_component_id: "pcb_component_1",
+        footprinter_string: "res0603",
+      },
+      {
+        type: "cad_component",
+        pcb_component_id: "pcb_component_2",
+        footprinter_string: "res0603",
+      },
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "R1",
+        ftype: "simple_resistor",
+        resistance: 22,
+        supplier_part_numbers: {
+          jlcpcb: ["C23345"],
+        },
+      } as SourceComponentBase,
+      {
+        type: "source_component",
+        source_component_id: "source_component_2",
+        name: "R2",
+        ftype: "simple_resistor",
+        resistance: 22,
+        supplier_part_numbers: {
+          jlcpcb: ["C23345"],
+        },
+      } as SourceComponentBase,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toEqual([
+      {
+        designator: "R1, R2",
+        quantity: 2,
+        comment: "22",
+        value: "22",
+        footprint: "res0603",
+        supplier_part_number_columns: {
+          "JLCPCB Part #": "C23345",
+        },
+      },
+    ])
   })
 })
 
@@ -84,8 +145,8 @@ describe("convertBomRowsToCsv", () => {
     const csv = convertBomRowsToCsv(bomRows)
 
     expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      R1,1k,1k,0805,C17513"
+      "Designator,Quantity,Comment,Value,Footprint,JLCPCB Part #
+      R1,1,1k,1k,0805,C17513"
     `)
   })
 })

@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "../lib/index"
+import { expect, test } from "bun:test"
+import { convertBomRowsToCsv, convertCircuitJsonToBomRows } from "../lib/index"
 import nineKeyKeyboardCircuitJson from "./assets/nine-key-keyboard.json"
 
 test("get-bom-for-nine-key-keyboard", async () => {
@@ -15,8 +15,9 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(microcontroller?.footprint).toBe("soic40_w22.58mm_p2.54mm_pl3.8_ph2.2")
 
   // Check a key
-  const key = bomRows.find((row) => row.designator === "K1")
+  const key = bomRows.find((row) => row.designator.includes("K1"))
   expect(key).toBeDefined()
+  expect(key?.quantity).toBe(9)
   expect(key?.comment).toBe("")
   expect(key?.value).toBe("")
   expect(key?.footprint).toBe("")
@@ -24,8 +25,9 @@ test("get-bom-for-nine-key-keyboard", async () => {
   expect(key?.supplier_part_number_columns?.["JLCPCB Part #"]).toBe("C5184526")
 
   // Check a diode
-  const diode = bomRows.find((row) => row.designator === "D1")
+  const diode = bomRows.find((row) => row.designator.includes("D1"))
   expect(diode).toBeDefined()
+  expect(diode?.quantity).toBe(9)
   expect(diode?.comment).toBe("")
   expect(diode?.value).toBe("")
   expect(diode?.footprint).toBe("")
@@ -34,8 +36,10 @@ test("get-bom-for-nine-key-keyboard", async () => {
 
   // Convert to CSV
   const csv = convertBomRowsToCsv(bomRows)
-  expect(csv).toContain("Designator,Comment,Value,Footprint,JLCPCB Part #")
-  expect(csv).toContain("U1,,,soic40_w22.58mm_p2.54mm_pl3.8_ph2.2,")
-  expect(csv).toContain("K1,,,,C5184526")
-  expect(csv).toContain("D1,,,,C57759")
+  expect(csv).toContain(
+    "Designator,Quantity,Comment,Value,Footprint,JLCPCB Part #",
+  )
+  expect(csv).toContain("U1,1,,,soic40_w22.58mm_p2.54mm_pl3.8_ph2.2,")
+  expect(csv).toContain('"K1, K2, K3, K4, K5, K6, K7, K8, K9",9,,,,C5184526')
+  expect(csv).toContain('"D1, D2, D3, D4, D5, D6, D7, D8, D9",9,,,,C57759')
 })
