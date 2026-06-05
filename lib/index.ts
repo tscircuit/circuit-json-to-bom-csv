@@ -15,6 +15,7 @@ type SupplierPartNumberColumn = "JLCPCB Part #"
 
 interface BomRow {
   designator: string
+  quantity?: number
   comment: string
   value: string
   footprint: string
@@ -86,6 +87,7 @@ export const convertCircuitJsonToBomRows = async ({
     bom.push({
       // TODO, use designator from source_component when it's introduced
       designator: source_component.name ?? elm.pcb_component_id,
+      quantity: 1,
       comment: isDoNotPlace ? "DNP" : comment,
       value: isDoNotPlace ? "DNP" : comment,
       footprint: part_info.footprint || cad_component?.footprinter_string || "",
@@ -100,7 +102,47 @@ export const convertCircuitJsonToBomRows = async ({
     })
   }
 
-  return bom
+  return groupBomRowsByPart(bom)
+}
+
+function groupBomRowsByPart(bom_rows: BomRow[]): BomRow[] {
+  const combinedRows = new Map<string, BomRow>()
+
+  for (const row of bom_rows) {
+    const key = getBomRowPartKey(row)
+    const existingRow = combinedRows.get(key)
+
+    if (existingRow) {
+      existingRow.designator = `${existingRow.designator}, ${row.designator}`
+      existingRow.quantity = (existingRow.quantity ?? 1) + (row.quantity ?? 1)
+      continue
+    }
+
+    combinedRows.set(key, { ...row })
+  }
+
+  return Array.from(combinedRows.values())
+}
+
+function getBomRowPartKey(row: BomRow): string {
+  return JSON.stringify({
+    comment: row.comment,
+    value: row.value,
+    footprint: row.footprint,
+    supplier_part_number_columns: sortRecord(row.supplier_part_number_columns),
+    manufacturer_mpn_pairs: row.manufacturer_mpn_pairs,
+    extra_columns: sortRecord(row.extra_columns),
+  })
+}
+
+function sortRecord<T extends string | undefined>(
+  record: Partial<Record<string, T>> | undefined,
+): Partial<Record<string, T>> | undefined {
+  if (!record) return undefined
+
+  return Object.fromEntries(
+    Object.entries(record).sort(([keyA], [keyB]) => keyA.localeCompare(keyB)),
+  )
 }
 
 function convertSupplierPartNumbersIntoColumns(
@@ -141,6 +183,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
 
     return {
       Designator: row.designator,
+      Quantity: row.quantity ?? 1,
       Comment: row.comment,
       Value: row.value,
       Footprint: row.footprint,
@@ -150,6 +193,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
 
   const columnHeaders: string[] = [
     "Designator",
+    "Quantity",
     "Comment",
     "Value",
     "Footprint",
