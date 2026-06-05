@@ -102,10 +102,10 @@ export const convertCircuitJsonToBomRows = async ({
     })
   }
 
-  return combineBomRows(bom)
+  return groupBomRowsByPart(bom)
 }
 
-function combineBomRows(bom_rows: BomRow[]): BomRow[] {
+function groupBomRowsByPart(bom_rows: BomRow[]): BomRow[] {
   const combinedRows = new Map<string, BomRow>()
 
   for (const row of bom_rows) {
