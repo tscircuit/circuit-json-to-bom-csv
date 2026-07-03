@@ -62,7 +62,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const csv = convertBomRowsToCsv(bomRowsFromJson)
     expect(csv).toMatchInlineSnapshot(`
       "Designator,Comment,Value,Footprint,JLCPCB Part #
-      C1,10µ,10µ,,C12345"
+      C1,10u,10u,,C12345"
     `)
   })
 })
@@ -87,5 +87,27 @@ describe("convertBomRowsToCsv", () => {
       "Designator,Comment,Value,Footprint,JLCPCB Part #
       R1,1k,1k,0805,C17513"
     `)
+  })
+
+  test("should output ASCII-only CSV text", () => {
+    const bomRows = [
+      {
+        designator: "Cµ1",
+        comment: "10µF ±10%",
+        value: "4.7μF Ω °C ™",
+        footprint: "0805–metric",
+        supplier_part_number_columns: {
+          "JLCPCB Part #": "C12345",
+        },
+      },
+    ]
+
+    const csv = convertBomRowsToCsv(bomRows)
+
+    expect(csv).toMatchInlineSnapshot(`
+      "Designator,Comment,Value,Footprint,JLCPCB Part #
+      Cu1,10uF +/-10%,"4.7uF ohm degC ",0805-metric,C12345"
+    `)
+    expect(csv).toMatch(/^[\x00-\x7F]*$/)
   })
 })

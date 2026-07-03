@@ -10,6 +10,7 @@ import type {
 import { formatSI } from "format-si-prefix"
 
 import Papa from "papaparse"
+import { sanitizeCsvText } from "./sanitize-csv-text"
 
 type SupplierPartNumberColumn = "JLCPCB Part #"
 
@@ -81,7 +82,9 @@ export const convertCircuitJsonToBomRows = async ({
     if (source_component.ftype === "simple_capacitor")
       comment = si((source_component as SourceSimpleCapacitor).capacitance)
 
-    const isDoNotPlace = Boolean(elm.do_not_place)
+    const isDoNotPlace = Boolean(
+      (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
+    )
 
     bom.push({
       // TODO, use designator from source_component when it's introduced
@@ -132,19 +135,19 @@ function si(v: string | number | undefined | null) {
 export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
   const csv_data = bom_rows.map((row) => {
     const supplier_part_number_columns = row.supplier_part_number_columns
-    const supplier_part_numbers = Object.values(
-      supplier_part_number_columns || {},
-    ).join(", ")
-    const extraColumns = Object.entries(row.extra_columns || {})
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")
+    const sanitized_supplier_part_number_columns = Object.fromEntries(
+      Object.entries(supplier_part_number_columns || {}).map(([key, value]) => [
+        sanitizeCsvText(key),
+        sanitizeCsvText(value),
+      ]),
+    )
 
     return {
-      Designator: row.designator,
-      Comment: row.comment,
-      Value: row.value,
-      Footprint: row.footprint,
-      ...supplier_part_number_columns,
+      Designator: sanitizeCsvText(row.designator),
+      Comment: sanitizeCsvText(row.comment),
+      Value: sanitizeCsvText(row.value),
+      Footprint: sanitizeCsvText(row.footprint),
+      ...sanitized_supplier_part_number_columns,
     }
   })
 
