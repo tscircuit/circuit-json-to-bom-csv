@@ -1,8 +1,8 @@
 const csvAsciiReplacements: Record<string, string> = {
-  "µ": "u",
-  "μ": "u",
-  "Ω": "ohm",
-  "Ω": "ohm",
+  µ: "u",
+  μ: "u",
+  Ω: "ohm",
+  Ω: "ohm",
   "±": "+/-",
   "°": "deg",
   "×": "x",
