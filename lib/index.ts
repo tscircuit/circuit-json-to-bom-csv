@@ -63,7 +63,7 @@ function isPlaceableComponent(
     !!source.name && !source.name.startsWith("pcb_component_")
   const hasFtype = !!(source as any).ftype
   const hasFootprint =
-    !!((source as any).footprint) || !!((source as any).footprinter_string)
+    !!(source as any).footprint || !!(source as any).footprinter_string
 
   if (!hasMeaningfulName && !hasFtype && !hasFootprint) return false
 
