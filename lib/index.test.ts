@@ -61,7 +61,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
     expect(csv).toBe(
-      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"C1","10u","10u","","C12345"',
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"C1","10u","10u","C12345","C12345"',
     )
   })
 
@@ -99,6 +99,40 @@ describe("convertCircuitJsonToBomRows", () => {
       supplier_part_number_columns: {
         "JLCPCB Part #": "C25804",
       },
+    })
+  })
+
+  test("should use manufacturer part number in comment when available", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "R1",
+        ftype: "simple_resistor",
+        resistance: 1000,
+      } as SourceComponentBase,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({
+      circuitJson,
+      resolvePart: async () => ({
+        manufacturer_mpn_pairs: [
+          {
+            manufacturer: "Yageo",
+            mpn: "RC0805FR-071KL",
+          },
+        ],
+      }),
+    })
+
+    expect(bomRows[0]).toMatchObject({
+      comment: "RC0805FR-071KL",
+      value: "1k",
     })
   })
 })
@@ -164,6 +198,26 @@ describe("convertBomRowsToCsv", () => {
 
     expect(csv).toBe(
       '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"R1","1k","1k","0805","C17513"',
+    )
+  })
+
+  test("should use JLCPCB part number for missing value and footprint", () => {
+    const bomRows = [
+      {
+        designator: "D1",
+        comment: "",
+        value: "",
+        footprint: "",
+        supplier_part_number_columns: {
+          "JLCPCB Part #": "C57759",
+        },
+      },
+    ]
+
+    const csv = convertBomRowsToCsv(bomRows)
+
+    expect(csv).toBe(
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"D1","","C57759","C57759","C57759"',
     )
   })
 })
