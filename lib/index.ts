@@ -41,6 +41,21 @@ interface ResolvedPart {
   extra_columns?: Record<string, string>
 }
 
+const trimText = (value: string | undefined): string => value?.trim() ?? ""
+
+const trimColumnValues = <T extends string>(
+  columns: Partial<Record<T, string>> | undefined,
+): Partial<Record<T, string>> | undefined => {
+  if (!columns) return undefined
+
+  return Object.fromEntries(
+    Object.entries(columns).map(([key, value]) => [
+      trimText(key),
+      trimText(value as string | undefined),
+    ]),
+  ) as Partial<Record<T, string>>
+}
+
 // HEADERS FROM DIFFERENT bom.csv FILES
 // Comment Designator Footprint "JLCPCB Part #(optional)"
 // Designator Value Footprint Populate MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer
@@ -88,18 +103,22 @@ export const convertCircuitJsonToBomRows = async ({
 
     bom.push({
       // TODO, use designator from source_component when it's introduced
-      designator: source_component.name ?? elm.pcb_component_id,
-      comment: isDoNotPlace ? "DNP" : comment,
-      value: isDoNotPlace ? "DNP" : comment,
-      footprint: part_info.footprint || cad_component?.footprinter_string || "",
+      designator: trimText(source_component.name ?? elm.pcb_component_id),
+      comment: trimText(isDoNotPlace ? "DNP" : comment),
+      value: trimText(isDoNotPlace ? "DNP" : comment),
+      footprint: trimText(
+        part_info.footprint || cad_component?.footprinter_string || "",
+      ),
       supplier_part_number_columns: isDoNotPlace
         ? undefined
-        : (part_info.supplier_part_number_columns ??
-          (source_component.supplier_part_numbers
-            ? convertSupplierPartNumbersIntoColumns(
-                source_component.supplier_part_numbers,
-              )
-            : undefined)),
+        : trimColumnValues(
+            part_info.supplier_part_number_columns ??
+              (source_component.supplier_part_numbers
+                ? convertSupplierPartNumbersIntoColumns(
+                    source_component.supplier_part_numbers,
+                  )
+                : undefined),
+          ),
     })
   }
 
@@ -114,13 +133,15 @@ function convertSupplierPartNumbersIntoColumns(
   > = {}
 
   if (supplier_part_numbers?.jlcpcb) {
-    supplier_part_number_columns["JLCPCB Part #"] =
-      supplier_part_numbers.jlcpcb[0]
+    supplier_part_number_columns["JLCPCB Part #"] = trimText(
+      supplier_part_numbers.jlcpcb[0],
+    )
   }
 
   if (supplier_part_numbers?.lcsc) {
-    supplier_part_number_columns["JLCPCB Part #"] =
-      supplier_part_numbers.lcsc[0]
+    supplier_part_number_columns["JLCPCB Part #"] = trimText(
+      supplier_part_numbers.lcsc[0],
+    )
   }
 
   return supplier_part_number_columns
@@ -137,16 +158,16 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     const supplier_part_number_columns = row.supplier_part_number_columns
     const sanitized_supplier_part_number_columns = Object.fromEntries(
       Object.entries(supplier_part_number_columns || {}).map(([key, value]) => [
-        sanitizeCsvText(key),
-        sanitizeCsvText(value),
+        sanitizeCsvText(trimText(key)),
+        sanitizeCsvText(trimText(value)),
       ]),
     )
 
     return {
-      Designator: sanitizeCsvText(row.designator),
-      Comment: sanitizeCsvText(row.comment),
-      Value: sanitizeCsvText(row.value),
-      Footprint: sanitizeCsvText(row.footprint),
+      Designator: sanitizeCsvText(trimText(row.designator)),
+      Comment: sanitizeCsvText(trimText(row.comment)),
+      Value: sanitizeCsvText(trimText(row.value)),
+      Footprint: sanitizeCsvText(trimText(row.footprint)),
       ...sanitized_supplier_part_number_columns,
     }
   })
@@ -165,5 +186,9 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     }
   }
 
-  return Papa.unparse(csv_data, { columns: columnHeaders })
+  return Papa.unparse(csv_data, {
+    columns: columnHeaders,
+    newline: "\r\n",
+    quotes: true,
+  })
 }

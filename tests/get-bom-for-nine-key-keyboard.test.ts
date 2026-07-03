@@ -34,8 +34,13 @@ test("get-bom-for-nine-key-keyboard", async () => {
 
   // Convert to CSV
   const csv = convertBomRowsToCsv(bomRows)
-  expect(csv).toContain("Designator,Comment,Value,Footprint,JLCPCB Part #")
-  expect(csv).toContain("U1,,,soic40_w22.58mm_p2.54mm_pl3.8_ph2.2,")
-  expect(csv).toContain("K1,,,,C5184526")
-  expect(csv).toContain("D1,,,,C57759")
+  expect(csv).toContain(
+    '"Designator","Comment","Value","Footprint","JLCPCB Part #"',
+  )
+  expect(csv).toContain(
+    '"U1","","","soic40_w22.58mm_p2.54mm_pl3.8_ph2.2",',
+  )
+  expect(csv).toContain('"K1","","","","C5184526"')
+  expect(csv).toContain('"D1","","","","C57759"')
+  expect(csv).toContain("\r\n")
 })

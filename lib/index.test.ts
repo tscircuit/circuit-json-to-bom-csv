@@ -1,10 +1,10 @@
-import { expect, test, describe } from "bun:test"
-import { convertCircuitJsonToBomRows, convertBomRowsToCsv } from "./index"
+import { describe, expect, test } from "bun:test"
 import type {
   AnyCircuitElement,
   PcbComponent,
   SourceComponentBase,
 } from "circuit-json"
+import { convertBomRowsToCsv, convertCircuitJsonToBomRows } from "./index"
 
 describe("convertCircuitJsonToBomRows", () => {
   test("should convert circuit JSON to BOM rows", async () => {
@@ -60,10 +60,46 @@ describe("convertCircuitJsonToBomRows", () => {
 
     const bomRowsFromJson = await convertCircuitJsonToBomRows({ circuitJson })
     const csv = convertBomRowsToCsv(bomRowsFromJson)
-    expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      C1,10u,10u,,C12345"
-    `)
+    expect(csv).toBe(
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"C1","10u","10u","","C12345"',
+    )
+  })
+
+  test("should trim whitespace around source values", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "cad_component",
+        pcb_component_id: "pcb_component_1",
+        footprinter_string: "  0805  ",
+      } as any,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "  R1  ",
+        ftype: "simple_resistor",
+        resistance: "  10k  ",
+        supplier_part_numbers: {
+          jlcpcb: ["  C25804  "],
+        },
+      } as SourceComponentBase,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows[0]).toEqual({
+      designator: "R1",
+      comment: "10k",
+      value: "10k",
+      footprint: "0805",
+      supplier_part_number_columns: {
+        "JLCPCB Part #": "C25804",
+      },
+    })
   })
 })
 
@@ -83,10 +119,9 @@ describe("convertBomRowsToCsv", () => {
 
     const csv = convertBomRowsToCsv(bomRows)
 
-    expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      R1,1k,1k,0805,C17513"
-    `)
+    expect(csv).toBe(
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"R1","1k","1k","0805","C17513"',
+    )
   })
 
   test("should output ASCII-only CSV text", () => {
@@ -104,10 +139,31 @@ describe("convertBomRowsToCsv", () => {
 
     const csv = convertBomRowsToCsv(bomRows)
 
-    expect(csv).toMatchInlineSnapshot(`
-      "Designator,Comment,Value,Footprint,JLCPCB Part #
-      Cu1,10uF +/-10%,"4.7uF ohm degC ",0805-metric,C12345"
-    `)
-    expect(csv).toMatch(/^[\x00-\x7F]*$/)
+    expect(csv).toBe(
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"Cu1","10uF +/-10%","4.7uF ohm degC ","0805-metric","C12345"',
+    )
+    expect([...csv].every((character) => character.charCodeAt(0) <= 0x7f)).toBe(
+      true,
+    )
+  })
+
+  test("should trim whitespace around direct BOM row values", () => {
+    const bomRows = [
+      {
+        designator: "  R1  ",
+        comment: "  1k  ",
+        value: "  1k  ",
+        footprint: "  0805  ",
+        supplier_part_number_columns: {
+          " JLCPCB Part # ": "  C17513  ",
+        },
+      },
+    ]
+
+    const csv = convertBomRowsToCsv(bomRows)
+
+    expect(csv).toBe(
+      '"Designator","Comment","Value","Footprint","JLCPCB Part #"\r\n"R1","1k","1k","0805","C17513"',
+    )
   })
 })
