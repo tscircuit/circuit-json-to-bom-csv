@@ -119,6 +119,7 @@ out
 
 .nuxt
 dist
+site-export
 
 # Gatsby files
 
@@ -177,3 +178,4 @@ dist
 package-lock.json
 .vscode
 .aider*
+.vercel
