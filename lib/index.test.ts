@@ -135,6 +135,40 @@ describe("convertCircuitJsonToBomRows", () => {
       value: "1k",
     })
   })
+
+  test("should skip test points", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "R1",
+        ftype: "simple_resistor",
+        resistance: 1000,
+      } as SourceComponentBase,
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_2",
+        source_component_id: "source_component_2",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_2",
+        name: "TP1",
+        ftype: "simple_test_point",
+      } as SourceComponentBase,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toHaveLength(1)
+    expect(bomRows[0]?.designator).toBe("R1")
+    expect(bomRows.some((row) => row.designator === "TP1")).toBe(false)
+  })
 })
 
 describe("convertBomRowsToCsv", () => {
@@ -192,7 +226,7 @@ describe("convertBomRowsToCsv", () => {
           " JLCPCB Part # ": "  C17513  ",
         },
       },
-    ]
+    ] as unknown as Parameters<typeof convertBomRowsToCsv>[0]
 
     const csv = convertBomRowsToCsv(bomRows)
 
