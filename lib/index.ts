@@ -64,6 +64,9 @@ const getJlcpcbPartNumber = (
   columns: BomRow["supplier_part_number_columns"],
 ): string => trimText(columns?.["JLCPCB Part #"])
 
+const isTestPoint = (source_component: SourceComponentBase): boolean =>
+  source_component.ftype === "simple_test_point"
+
 // HEADERS FROM DIFFERENT bom.csv FILES
 // Comment Designator Footprint "JLCPCB Part #(optional)"
 // Designator Value Footprint Populate MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer
@@ -94,6 +97,7 @@ export const convertCircuitJsonToBomRows = async ({
     ) as any
 
     if (!source_component) continue
+    if (isTestPoint(source_component)) continue
 
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
