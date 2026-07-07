@@ -226,7 +226,7 @@ describe("convertBomRowsToCsv", () => {
           " JLCPCB Part # ": "  C17513  ",
         },
       },
-    ]
+    ] as unknown as Parameters<typeof convertBomRowsToCsv>[0]
 
     const csv = convertBomRowsToCsv(bomRows)
 
