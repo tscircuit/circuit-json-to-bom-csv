@@ -71,6 +71,32 @@ const isTestPoint = (source_component: SourceComponentBase): boolean =>
 // Comment Designator Footprint "JLCPCB Part #(optional)"
 // Designator Value Footprint Populate MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer
 
+const NON_PLACEABLE_FTYPES = new Set([
+  "simple_net",
+  "simple_ground",
+  "simple_power",
+])
+
+function isPlaceableComponent(
+  source: SourceComponentBase,
+  pcb: PcbComponent,
+): boolean {
+  if (NON_PLACEABLE_FTYPES.has((source as any).ftype ?? "")) return false
+
+  const name = source.name ?? pcb.pcb_component_id ?? ""
+  if (/^pcb_component_\d+$/.test(name)) return false
+
+  const hasMeaningfulName =
+    !!source.name && !source.name.startsWith("pcb_component_")
+  const hasFtype = !!(source as any).ftype
+  const hasFootprint =
+    !!(source as any).footprint || !!(source as any).footprinter_string
+
+  if (!hasMeaningfulName && !hasFtype && !hasFootprint) return false
+
+  return true
+}
+
 export const convertCircuitJsonToBomRows = async ({
   circuitJson,
   resolvePart,
@@ -98,6 +124,7 @@ export const convertCircuitJsonToBomRows = async ({
 
     if (!source_component) continue
     if (isTestPoint(source_component)) continue
+    if (!isPlaceableComponent(source_component, elm)) continue
 
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
@@ -129,7 +156,10 @@ export const convertCircuitJsonToBomRows = async ({
         )
     const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
     const footprint = trimText(
-      part_info.footprint || cad_component?.footprinter_string || "",
+      part_info.footprint ||
+        cad_component?.footprinter_string ||
+        (source_component as any).footprint ||
+        "",
     )
     const trimmedValue = trimText(value)
 
