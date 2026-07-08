@@ -10,6 +10,7 @@ import type {
 import { formatSI } from "format-si-prefix"
 
 import Papa from "papaparse"
+import { sanitizeCsvText } from "./sanitize-csv-text"
 
 type SupplierPartNumberColumn = "JLCPCB Part #"
 
@@ -39,6 +40,32 @@ interface ResolvedPart {
   }>
   extra_columns?: Record<string, string>
 }
+
+const trimText = (value: string | undefined): string => value?.trim() ?? ""
+
+const trimColumnValues = <T extends string>(
+  columns: Partial<Record<T, string>> | undefined,
+): Partial<Record<T, string>> | undefined => {
+  if (!columns) return undefined
+
+  return Object.fromEntries(
+    Object.entries(columns).map(([key, value]) => [
+      trimText(key),
+      trimText(value as string | undefined),
+    ]),
+  ) as Partial<Record<T, string>>
+}
+
+const getManufacturerPartNumberComment = (
+  pairs: ResolvedPart["manufacturer_mpn_pairs"],
+): string => pairs?.map(({ mpn }) => trimText(mpn)).find(Boolean) ?? ""
+
+const getJlcpcbPartNumber = (
+  columns: BomRow["supplier_part_number_columns"],
+): string => trimText(columns?.["JLCPCB Part #"])
+
+const isTestPoint = (source_component: SourceComponentBase): boolean =>
+  source_component.ftype === "simple_test_point"
 
 // HEADERS FROM DIFFERENT bom.csv FILES
 // Comment Designator Footprint "JLCPCB Part #(optional)"
@@ -96,38 +123,53 @@ export const convertCircuitJsonToBomRows = async ({
     ) as any
 
     if (!source_component) continue
+    if (isTestPoint(source_component)) continue
     if (!isPlaceableComponent(source_component, elm)) continue
 
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
 
-    let comment = ""
+    let value = ""
 
     if (source_component.ftype === "simple_resistor")
-      comment = si((source_component as SourceSimpleResistor).resistance)
+      value = si((source_component as SourceSimpleResistor).resistance)
     if (source_component.ftype === "simple_capacitor")
-      comment = si((source_component as SourceSimpleCapacitor).capacitance)
+      value = si((source_component as SourceSimpleCapacitor).capacitance)
 
-    const isDoNotPlace = Boolean(elm.do_not_place)
+    const comment = getManufacturerPartNumberComment(
+      part_info.manufacturer_mpn_pairs,
+    )
 
-    bom.push({
-      // TODO, use designator from source_component when it's introduced
-      designator: source_component.name ?? elm.pcb_component_id,
-      comment: isDoNotPlace ? "DNP" : comment,
-      value: isDoNotPlace ? "DNP" : comment,
-      footprint:
-        part_info.footprint ||
+    const isDoNotPlace = Boolean(
+      (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
+    )
+
+    const supplier_part_number_columns = isDoNotPlace
+      ? undefined
+      : trimColumnValues(
+          part_info.supplier_part_number_columns ??
+            (source_component.supplier_part_numbers
+              ? convertSupplierPartNumbersIntoColumns(
+                  source_component.supplier_part_numbers,
+                )
+              : undefined),
+        )
+    const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
+    const footprint = trimText(
+      part_info.footprint ||
         cad_component?.footprinter_string ||
         (source_component as any).footprint ||
         "",
-      supplier_part_number_columns: isDoNotPlace
-        ? undefined
-        : (part_info.supplier_part_number_columns ??
-          (source_component.supplier_part_numbers
-            ? convertSupplierPartNumbersIntoColumns(
-                source_component.supplier_part_numbers,
-              )
-            : undefined)),
+    )
+    const trimmedValue = trimText(value)
+
+    bom.push({
+      // TODO, use designator from source_component when it's introduced
+      designator: trimText(source_component.name ?? elm.pcb_component_id),
+      comment: trimText(isDoNotPlace ? "DNP" : comment || trimmedValue),
+      value: trimText(isDoNotPlace ? "DNP" : trimmedValue || jlcpcbPartNumber),
+      footprint: trimText(footprint || jlcpcbPartNumber),
+      supplier_part_number_columns,
     })
   }
 
@@ -142,13 +184,15 @@ function convertSupplierPartNumbersIntoColumns(
   > = {}
 
   if (supplier_part_numbers?.jlcpcb) {
-    supplier_part_number_columns["JLCPCB Part #"] =
-      supplier_part_numbers.jlcpcb[0]
+    supplier_part_number_columns["JLCPCB Part #"] = trimText(
+      supplier_part_numbers.jlcpcb[0],
+    )
   }
 
   if (supplier_part_numbers?.lcsc) {
-    supplier_part_number_columns["JLCPCB Part #"] =
-      supplier_part_numbers.lcsc[0]
+    supplier_part_number_columns["JLCPCB Part #"] = trimText(
+      supplier_part_numbers.lcsc[0],
+    )
   }
 
   return supplier_part_number_columns
@@ -163,19 +207,24 @@ function si(v: string | number | undefined | null) {
 export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
   const csv_data = bom_rows.map((row) => {
     const supplier_part_number_columns = row.supplier_part_number_columns
-    const supplier_part_numbers = Object.values(
-      supplier_part_number_columns || {},
-    ).join(", ")
-    const extraColumns = Object.entries(row.extra_columns || {})
-      .map(([key, value]) => `${key}: ${value}`)
-      .join(", ")
+    const sanitized_supplier_part_number_columns = Object.fromEntries(
+      Object.entries(supplier_part_number_columns || {}).map(([key, value]) => [
+        sanitizeCsvText(trimText(key)),
+        sanitizeCsvText(trimText(value)),
+      ]),
+    )
+
+    const jlcpcbPartNumber = getJlcpcbPartNumber(
+      row.supplier_part_number_columns,
+    )
 
     return {
-      Designator: row.designator,
-      Comment: row.comment,
-      Value: row.value,
-      Footprint: row.footprint,
-      ...supplier_part_number_columns,
+      Designator: sanitizeCsvText(trimText(row.designator)),
+      Comment: sanitizeCsvText(trimText(row.comment)),
+      Value: sanitizeCsvText(trimText(row.value) || jlcpcbPartNumber),
+      Footprint:
+        sanitizeCsvText(trimText(row.footprint) || jlcpcbPartNumber) || " ",
+      ...sanitized_supplier_part_number_columns,
     }
   })
 
@@ -193,5 +242,9 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     }
   }
 
-  return Papa.unparse(csv_data, { columns: columnHeaders })
+  return Papa.unparse(csv_data, {
+    columns: columnHeaders,
+    newline: "\r\n",
+    quotes: true,
+  })
 }

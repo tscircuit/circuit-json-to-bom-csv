@@ -6,16 +6,20 @@
   "files": [
     "dist"
   ],
-  "version": "0.0.9",
+  "version": "0.0.14",
   "type": "module",
   "scripts": {
     "build": "tsup-node ./lib/index.ts --format esm --dts --sourcemap",
+    "build:site": "bun build site/index.html --outdir ./site-export",
+    "start": "bun --bun site/index.html",
     "test": "bun test"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/bun": "^1.2.2",
     "@types/papaparse": "^5.3.14",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "circuit-json": "^0.0.265",
     "tsup": "^8.3.0"
   },
@@ -24,6 +28,9 @@
   },
   "dependencies": {
     "format-si-prefix": "^0.3.2",
-    "papaparse": "^5.4.1"
+    "lucide-react": "^1.23.0",
+    "papaparse": "^5.4.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }
