@@ -133,6 +133,9 @@ export const convertCircuitJsonToBomRows = async ({
     )
     const trimmedValue = trimText(value)
 
+    if (cad_component?.show_as_bounding_box && !footprint && !jlcpcbPartNumber)
+      continue
+
     bom.push({
       // TODO, use designator from source_component when it's introduced
       designator: trimText(source_component.name ?? elm.pcb_component_id),

@@ -169,6 +169,35 @@ describe("convertCircuitJsonToBomRows", () => {
     expect(bomRows[0]?.designator).toBe("R1")
     expect(bomRows.some((row) => row.designator === "TP1")).toBe(false)
   })
+
+  test("should skip copper-pad-only components", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "SW1",
+        ftype: "simple_chip",
+        supplier_part_numbers: {},
+      } as SourceComponentBase,
+      {
+        type: "cad_component",
+        cad_component_id: "cad_component_1",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+        show_as_bounding_box: true,
+      },
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toHaveLength(0)
+    expect(bomRows.some((row) => row.designator === "SW1")).toBe(false)
+  })
 })
 
 describe("convertBomRowsToCsv", () => {
