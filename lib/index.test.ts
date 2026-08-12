@@ -102,6 +102,28 @@ describe("convertCircuitJsonToBomRows", () => {
     })
   })
 
+  test("should skip do-not-place components", async () => {
+    const circuitJson: AnyCircuitElement[] = [
+      {
+        type: "pcb_component",
+        pcb_component_id: "pcb_component_1",
+        source_component_id: "source_component_1",
+        do_not_place: true,
+      } as PcbComponent,
+      {
+        type: "source_component",
+        source_component_id: "source_component_1",
+        name: "J1",
+        ftype: "simple_resistor",
+        resistance: 1000,
+      } as SourceComponentBase,
+    ] as AnyCircuitElement[]
+
+    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+
+    expect(bomRows).toHaveLength(0)
+  })
+
   test("should use manufacturer part number in comment when available", async () => {
     const circuitJson: AnyCircuitElement[] = [
       {
