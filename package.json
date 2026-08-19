@@ -1,5 +1,9 @@
 {
   "name": "circuit-json-to-bom-csv",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tscircuit/circuit-json-to-bom-csv.git"
+  },
   "module": "dist/index.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
