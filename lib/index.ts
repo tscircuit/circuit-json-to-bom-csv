@@ -14,7 +14,7 @@ import { sanitizeCsvText } from "./sanitize-csv-text"
 
 type SupplierPartNumberColumn = "JLCPCB Part #"
 
-interface BomRow {
+export interface BomRow {
   designator: string
   comment: string
   value: string
@@ -39,6 +39,10 @@ interface ResolvedPart {
     mpn: string
   }>
   extra_columns?: Record<string, string>
+}
+
+type SourceComponentWithSourcing = SourceComponentBase & {
+  customer_supplied?: boolean
 }
 
 const trimText = (value: string | undefined): string => value?.trim() ?? ""
@@ -113,6 +117,14 @@ export const convertCircuitJsonToBomRows = async ({
     const comment = getManufacturerPartNumberComment(
       part_info.manufacturer_mpn_pairs,
     )
+    const sourceComponentWithSourcing =
+      source_component as SourceComponentWithSourcing
+    const extraColumns = {
+      ...part_info.extra_columns,
+      ...(sourceComponentWithSourcing.customer_supplied
+        ? { "Customer Supplied": "Yes" }
+        : {}),
+    }
 
     const isDoNotPlace = Boolean(
       (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
@@ -137,10 +149,19 @@ export const convertCircuitJsonToBomRows = async ({
     bom.push({
       // TODO, use designator from source_component when it's introduced
       designator: trimText(source_component.name ?? elm.pcb_component_id),
-      comment: trimText(isDoNotPlace ? "DNP" : comment || trimmedValue),
+      comment: trimText(
+        isDoNotPlace
+          ? "DNP"
+          : comment ||
+              source_component.manufacturer_part_number ||
+              trimmedValue,
+      ),
       value: trimText(isDoNotPlace ? "DNP" : trimmedValue || jlcpcbPartNumber),
       footprint: trimText(footprint || jlcpcbPartNumber),
       supplier_part_number_columns,
+      ...(Object.keys(extraColumns).length > 0
+        ? { extra_columns: extraColumns }
+        : {}),
     })
   }
 
@@ -184,6 +205,12 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
         sanitizeCsvText(trimText(value)),
       ]),
     )
+    const sanitizedExtraColumns = Object.fromEntries(
+      Object.entries(row.extra_columns ?? {}).map(([key, value]) => [
+        sanitizeCsvText(trimText(key)),
+        sanitizeCsvText(trimText(value)),
+      ]),
+    )
 
     const jlcpcbPartNumber = getJlcpcbPartNumber(
       row.supplier_part_number_columns,
@@ -196,6 +223,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
       Footprint:
         sanitizeCsvText(trimText(row.footprint) || jlcpcbPartNumber) || " ",
       ...sanitized_supplier_part_number_columns,
+      ...sanitizedExtraColumns,
     }
   })
 
