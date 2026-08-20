@@ -124,41 +124,44 @@ describe("convertCircuitJsonToBomRows", () => {
     expect(bomRows).toHaveLength(0)
   })
 
-  test.failing("should identify a customer-supplied module in the BOM", async () => {
-    const customerSuppliedModule = {
-      type: "source_component" as const,
-      source_component_id: "source_component_module",
-      name: "U1",
-      ftype: "simple_chip" as const,
-      manufacturer_part_number: "OSM-S-AM62L",
-      customer_supplied: true,
-    }
-    const circuitJson = [
-      {
-        type: "pcb_component" as const,
-        pcb_component_id: "pcb_component_module",
+  test.failing(
+    "should identify a customer-supplied module in the BOM",
+    async () => {
+      const customerSuppliedModule = {
+        type: "source_component" as const,
         source_component_id: "source_component_module",
-        width: 30,
-        height: 15,
-        center: { x: 0, y: 0 },
-        layer: "top" as const,
-        rotation: 0,
-      },
-      customerSuppliedModule,
-    ]
+        name: "U1",
+        ftype: "simple_chip" as const,
+        manufacturer_part_number: "OSM-S-AM62L",
+        customer_supplied: true,
+      }
+      const circuitJson = [
+        {
+          type: "pcb_component" as const,
+          pcb_component_id: "pcb_component_module",
+          source_component_id: "source_component_module",
+          width: 30,
+          height: 15,
+          center: { x: 0, y: 0 },
+          layer: "top" as const,
+          rotation: 0,
+        },
+        customerSuppliedModule,
+      ]
 
-    const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
+      const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
 
-    expect(bomRows).toEqual([
-      {
-        designator: "U1",
-        comment: "OSM-S-AM62L",
-        value: "",
-        footprint: "",
-        extra_columns: { "Customer Supplied": "Yes" },
-      },
-    ])
-  })
+      expect(bomRows).toEqual([
+        {
+          designator: "U1",
+          comment: "OSM-S-AM62L",
+          value: "",
+          footprint: "",
+          extra_columns: { "Customer Supplied": "Yes" },
+        },
+      ])
+    },
+  )
 
   test("should use manufacturer part number in comment when available", async () => {
     const circuitJson: AnyCircuitElement[] = [
