@@ -110,9 +110,9 @@ export const convertCircuitJsonToBomRows = async ({
     if (source_component.ftype === "simple_capacitor")
       value = si((source_component as SourceSimpleCapacitor).capacitance)
 
-    const comment = getManufacturerPartNumberComment(
-      part_info.manufacturer_mpn_pairs,
-    )
+    const comment =
+      trimText(part_info.comment) ||
+      getManufacturerPartNumberComment(part_info.manufacturer_mpn_pairs)
 
     const isDoNotPlace = Boolean(
       (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
