@@ -104,7 +104,6 @@ export const convertCircuitJsonToBomRows = async ({
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
 
-    // A resolver can assign real mounting hardware even if the source has no MPN.
     const hasResolvedPart = Boolean(
       trimText(part_info.part_number) ||
         trimText(part_info.comment) ||
