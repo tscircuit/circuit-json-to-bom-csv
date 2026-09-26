@@ -10,6 +10,7 @@ import type {
 import { formatSI } from "format-si-prefix"
 
 import Papa from "papaparse"
+import { isBareMountingHole } from "./is-bare-mounting-hole"
 import { sanitizeCsvText } from "./sanitize-csv-text"
 
 type SupplierPartNumberColumn = "JLCPCB Part #"
@@ -102,6 +103,22 @@ export const convertCircuitJsonToBomRows = async ({
 
     const part_info: Partial<ResolvedPart> =
       (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
+
+    // A resolver can assign real mounting hardware even if the source has no MPN.
+    const hasResolvedPart = Boolean(
+      trimText(part_info.part_number) ||
+        trimText(part_info.comment) ||
+        trimText(part_info.footprint) ||
+        Object.values(part_info.supplier_part_number_columns ?? {}).some(
+          (number) => trimText(number),
+        ) ||
+        part_info.manufacturer_mpn_pairs?.some(({ mpn }) => trimText(mpn)),
+    )
+    if (
+      !hasResolvedPart &&
+      isBareMountingHole(circuitJson, source_component, elm)
+    )
+      continue
 
     let value = ""
 
