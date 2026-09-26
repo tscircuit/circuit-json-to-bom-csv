@@ -67,6 +67,13 @@ Converts Circuit JSON to BOM rows.
 
 Returns a Promise that resolves to an array of BOM rows.
 
+Return `extra_columns` from `resolvePart` to include custom fields such as
+`{ Tolerance: "±5%", "Assembly notes": "Hand solder" }` in each BOM row and its
+CSV export. Direct BOM rows can also set `extra_columns`. Headers and cells use
+the same whitespace trimming and ASCII conversion as the existing CSV fields.
+Standard BOM and supplier columns take precedence when a custom header collides
+after normalization.
+
 ### `convertBomRowsToCsv(bomRows: BomRow[]): string`
 
 Converts BOM rows to a CSV string.
