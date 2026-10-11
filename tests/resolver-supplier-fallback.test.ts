@@ -24,7 +24,7 @@ const supplierCases = [
 ]
 
 for (const { label, columns, expected } of supplierCases) {
-  test(`keyboard K1 preserves its source supplier when resolver returns ${label}`, async () => {
+  test(`keyboard K1 uses ${expected} when resolver returns ${label}`, async () => {
     const circuitJson = structuredClone(keyboard) as AnyCircuitElement[]
     const original = structuredClone(circuitJson)
     const rows = await convertCircuitJsonToBomRows({
