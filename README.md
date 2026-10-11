@@ -65,6 +65,10 @@ Converts Circuit JSON to BOM rows.
 - `circuitJson`: An array of Circuit JSON elements.
 - `resolvePart` (optional): A function to resolve additional part information.
 
+A nonempty resolved `supplier_part_number_columns["JLCPCB Part #"]` overrides
+the source supplier number. An empty or whitespace-only resolved number falls
+back to the source JLCPCB/LCSC number when one is available.
+
 Returns a Promise that resolves to an array of BOM rows.
 
 ### `convertBomRowsToCsv(bomRows: BomRow[]): string`
