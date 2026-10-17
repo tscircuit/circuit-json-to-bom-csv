@@ -1,5 +1,5 @@
-import type { AnyCircuitElement } from "circuit-json"
 import { expect, test } from "bun:test"
+import type { AnyCircuitElement } from "circuit-json"
 import { convertBomRowsToCsv, convertCircuitJsonToBomRows } from "../lib"
 
 // Relevant U1 records from gokul/mpu6050-mini v1.0.3 Circuit JSON.
@@ -52,6 +52,6 @@ test("preserves the released board's U1 supplier part number", () => {
   )
 })
 
-test.failing("writes the source MPN into U1's BOM Comment column", () => {
+test("writes the source MPN into U1's BOM Comment column", () => {
   expect(bomCsv).toContain('"U1","MPU-6050",')
 })
