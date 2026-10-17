@@ -83,6 +83,7 @@ describe("convertCircuitJsonToBomRows", () => {
         name: "  R1  ",
         ftype: "simple_resistor",
         resistance: "  10k  ",
+        manufacturer_part_number: "  ",
         supplier_part_numbers: {
           jlcpcb: ["  C25804  "],
         },
@@ -137,6 +138,7 @@ describe("convertCircuitJsonToBomRows", () => {
         name: "R1",
         ftype: "simple_resistor",
         resistance: 1000,
+        manufacturer_part_number: "SOURCE-MPN",
       } as SourceComponentBase,
     ] as AnyCircuitElement[]
 
