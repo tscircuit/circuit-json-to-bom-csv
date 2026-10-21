@@ -134,7 +134,7 @@ export const convertCircuitJsonToBomRows = async ({
       (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
     )
 
-    const supplier_part_number_columns = isDoNotPlace
+    let supplier_part_number_columns = isDoNotPlace
       ? undefined
       : trimColumnValues(
           part_info.supplier_part_number_columns ??
@@ -144,6 +144,23 @@ export const convertCircuitJsonToBomRows = async ({
                 )
               : undefined),
         )
+    if (
+      !isDoNotPlace &&
+      !getJlcpcbPartNumber(supplier_part_number_columns) &&
+      source_component.supplier_part_numbers
+    ) {
+      const sourceJlcpcbPartNumber = getJlcpcbPartNumber(
+        convertSupplierPartNumbersIntoColumns(
+          source_component.supplier_part_numbers,
+        ),
+      )
+      if (sourceJlcpcbPartNumber) {
+        supplier_part_number_columns = {
+          ...supplier_part_number_columns,
+          "JLCPCB Part #": sourceJlcpcbPartNumber,
+        }
+      }
+    }
     const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
     const footprint = trimText(
       part_info.footprint || cad_component?.footprinter_string || "",
