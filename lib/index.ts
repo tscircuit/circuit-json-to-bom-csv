@@ -44,6 +44,15 @@ interface ResolvedPart {
 
 const trimText = (value: string | undefined): string => value?.trim() ?? ""
 
+const getFirstSupplierPartNumber = (
+  supplierPartNumbers: string[] | undefined,
+): string =>
+  supplierPartNumbers
+    ?.map((supplierPartNumber) =>
+      trimText(supplierPartNumber).replace(/\s+/g, ""),
+    )
+    .find(Boolean) ?? ""
+
 const trimColumnValues = <T extends string>(
   columns: Partial<Record<T, string>> | undefined,
 ): Partial<Record<T, string>> | undefined => {
@@ -134,16 +143,20 @@ export const convertCircuitJsonToBomRows = async ({
       (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
     )
 
+    const sourceSupplierPartNumberColumns =
+      source_component.supplier_part_numbers
+        ? convertSupplierPartNumbersIntoColumns(
+            source_component.supplier_part_numbers,
+          )
+        : undefined
+    const resolvedSupplierPartNumberColumns = trimColumnValues(
+      part_info.supplier_part_number_columns,
+    )
     const supplier_part_number_columns = isDoNotPlace
       ? undefined
-      : trimColumnValues(
-          part_info.supplier_part_number_columns ??
-            (source_component.supplier_part_numbers
-              ? convertSupplierPartNumbersIntoColumns(
-                  source_component.supplier_part_numbers,
-                )
-              : undefined),
-        )
+      : getJlcpcbPartNumber(resolvedSupplierPartNumberColumns)
+        ? resolvedSupplierPartNumberColumns
+        : sourceSupplierPartNumberColumns
     const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
     const footprint = trimText(
       part_info.footprint || cad_component?.footprinter_string || "",
@@ -166,23 +179,11 @@ export const convertCircuitJsonToBomRows = async ({
 function convertSupplierPartNumbersIntoColumns(
   supplier_part_numbers: Partial<Record<SupplierName, string[]>> | undefined,
 ): BomRow["supplier_part_number_columns"] {
-  const supplier_part_number_columns: Partial<
-    BomRow["supplier_part_number_columns"]
-  > = {}
+  const partNumber =
+    getFirstSupplierPartNumber(supplier_part_numbers?.lcsc) ||
+    getFirstSupplierPartNumber(supplier_part_numbers?.jlcpcb)
 
-  if (supplier_part_numbers?.jlcpcb) {
-    supplier_part_number_columns["JLCPCB Part #"] = trimText(
-      supplier_part_numbers.jlcpcb[0],
-    )
-  }
-
-  if (supplier_part_numbers?.lcsc) {
-    supplier_part_number_columns["JLCPCB Part #"] = trimText(
-      supplier_part_numbers.lcsc[0],
-    )
-  }
-
-  return supplier_part_number_columns
+  return partNumber ? { "JLCPCB Part #": partNumber } : {}
 }
 
 function si(v: string | number | undefined | null) {
