@@ -176,10 +176,9 @@ function convertSupplierPartNumbersIntoColumns(
     )
   }
 
-  if (supplier_part_numbers?.lcsc) {
-    supplier_part_number_columns["JLCPCB Part #"] = trimText(
-      supplier_part_numbers.lcsc[0],
-    )
+  const lcscPartNumber = trimText(supplier_part_numbers?.lcsc?.[0])
+  if (lcscPartNumber) {
+    supplier_part_number_columns["JLCPCB Part #"] = lcscPartNumber
   }
 
   return supplier_part_number_columns
