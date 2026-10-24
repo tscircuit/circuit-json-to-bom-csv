@@ -103,7 +103,7 @@ describe("convertCircuitJsonToBomRows", () => {
     })
   })
 
-  test("should skip do-not-place components", async () => {
+  test("should include do-not-place components labeled DNP", async () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
@@ -122,7 +122,9 @@ describe("convertCircuitJsonToBomRows", () => {
 
     const bomRows = await convertCircuitJsonToBomRows({ circuitJson })
 
-    expect(bomRows).toHaveLength(0)
+    expect(bomRows).toHaveLength(1)
+    expect(bomRows[0]?.comment).toBe("DNP")
+    expect(bomRows[0]?.value).toBe("DNP")
   })
 
   test("should use manufacturer part number in comment when available", async () => {
