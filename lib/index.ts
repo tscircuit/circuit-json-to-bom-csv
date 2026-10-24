@@ -139,6 +139,7 @@ export const convertCircuitJsonToBomRows = async ({
       value = si((source_component as SourceSimpleInductor).inductance)
 
     const comment =
+      trimText(part_info.comment) ||
       getManufacturerPartNumberComment(part_info.manufacturer_mpn_pairs) ||
       trimText(source_component.manufacturer_part_number)
 
@@ -165,6 +166,7 @@ export const convertCircuitJsonToBomRows = async ({
       part_info.footprint || cad_component?.footprinter_string || "",
     )
     const trimmedValue = trimText(value)
+    const extra_columns = part_info.extra_columns
 
     bom.push({
       // TODO, use designator from source_component when it's introduced
@@ -173,6 +175,9 @@ export const convertCircuitJsonToBomRows = async ({
       value: trimText(isDoNotPlace ? "DNP" : trimmedValue || jlcpcbPartNumber),
       footprint: trimText(footprint || jlcpcbPartNumber),
       supplier_part_number_columns,
+      ...(extra_columns && Object.keys(extra_columns).length > 0
+        ? { extra_columns }
+        : {}),
     })
   }
 
@@ -204,12 +209,19 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
         sanitizeCsvText(trimText(value)),
       ]),
     )
+    const sanitized_extra_columns = Object.fromEntries(
+      Object.entries(row.extra_columns ?? {}).map(([key, value]) => [
+        sanitizeCsvText(trimText(key)),
+        sanitizeCsvText(trimText(value)),
+      ]),
+    )
 
     const jlcpcbPartNumber = getJlcpcbPartNumber(
       row.supplier_part_number_columns,
     )
 
     return {
+      ...sanitized_extra_columns,
       Designator: sanitizeCsvText(trimText(row.designator)),
       Comment: sanitizeCsvText(trimText(row.comment)),
       Value: sanitizeCsvText(trimText(row.value) || jlcpcbPartNumber),
