@@ -1,0 +1,241 @@
+import type {
+  AnyCircuitElement,
+  PcbComponent,
+  SourceComponentBase,
+  SourceSimpleCapacitor,
+  SourceSimpleInductor,
+  SourceSimpleResistor,
+  SupplierName,
+} from "circuit-json"
+// @ts-ignore
+import { formatSI } from "format-si-prefix"
+
+import Papa from "papaparse"
+import { isBareMountingHole } from "./is-bare-mounting-hole"
+import { sanitizeCsvText } from "./sanitize-csv-text"
+
+type SupplierPartNumberColumn = "JLCPCB Part #"
+
+interface BomRow {
+  designator: string
+  comment: string
+  value: string
+  footprint: string
+  supplier_part_number_columns?: Partial<
+    Record<SupplierPartNumberColumn, string>
+  >
+  manufacturer_mpn_pairs?: Array<{
+    manufacturer: string
+    mpn: string
+  }>
+  extra_columns?: Record<string, string>
+}
+
+interface ResolvedPart {
+  part_number?: string
+  footprint?: string
+  comment?: string
+  supplier_part_number_columns?: Record<SupplierPartNumberColumn, string>
+  manufacturer_mpn_pairs?: Array<{
+    manufacturer: string
+    mpn: string
+  }>
+  extra_columns?: Record<string, string>
+}
+
+const trimText = (value: string | undefined): string => value?.trim() ?? ""
+
+const getFirstSupplierPartNumber = (
+  supplierPartNumbers: string[] | undefined,
+): string =>
+  supplierPartNumbers
+    ?.map((supplierPartNumber) =>
+      trimText(supplierPartNumber).replace(/\s+/g, ""),
+    )
+    .find(Boolean) ?? ""
+
+const trimColumnValues = <T extends string>(
+  columns: Partial<Record<T, string>> | undefined,
+): Partial<Record<T, string>> | undefined => {
+  if (!columns) return undefined
+
+  return Object.fromEntries(
+    Object.entries(columns).map(([key, value]) => [
+      trimText(key),
+      trimText(value as string | undefined),
+    ]),
+  ) as Partial<Record<T, string>>
+}
+
+const getManufacturerPartNumberComment = (
+  pairs: ResolvedPart["manufacturer_mpn_pairs"],
+): string => pairs?.map(({ mpn }) => trimText(mpn)).find(Boolean) ?? ""
+
+const getJlcpcbPartNumber = (
+  columns: BomRow["supplier_part_number_columns"],
+): string => trimText(columns?.["JLCPCB Part #"])
+
+const isTestPoint = (source_component: SourceComponentBase): boolean =>
+  source_component.ftype === "simple_test_point"
+
+// HEADERS FROM DIFFERENT bom.csv FILES
+// Comment Designator Footprint "JLCPCB Part #(optional)"
+// Designator Value Footprint Populate MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer MPN Manufacturer
+
+export const convertCircuitJsonToBomRows = async ({
+  circuitJson,
+  resolvePart,
+}: {
+  circuitJson: AnyCircuitElement[]
+  resolvePart?: (part_info: {
+    source_component: SourceComponentBase
+    pcb_component: PcbComponent
+  }) => Promise<ResolvedPart | null>
+}): Promise<BomRow[]> => {
+  const bom: BomRow[] = []
+  for (const elm of circuitJson) {
+    if (elm.type !== "pcb_component") continue
+    if (elm.do_not_place) continue
+
+    const source_component = circuitJson.find(
+      (e) =>
+        e.type === "source_component" &&
+        e.source_component_id === elm.source_component_id,
+    ) as any as SourceComponentBase
+    const cad_component = circuitJson.find(
+      (e) =>
+        e.type === "cad_component" &&
+        e.pcb_component_id === elm.pcb_component_id,
+    ) as any
+
+    if (!source_component) continue
+    if (isTestPoint(source_component)) continue
+
+    const part_info: Partial<ResolvedPart> =
+      (await resolvePart?.({ pcb_component: elm, source_component })) ?? {}
+
+    const hasResolvedPart = Boolean(
+      trimText(part_info.part_number) ||
+        trimText(part_info.comment) ||
+        trimText(part_info.footprint) ||
+        Object.values(part_info.supplier_part_number_columns ?? {}).some(
+          (number) => trimText(number),
+        ) ||
+        part_info.manufacturer_mpn_pairs?.some(({ mpn }) => trimText(mpn)),
+    )
+    if (
+      !hasResolvedPart &&
+      isBareMountingHole(circuitJson, source_component, elm)
+    )
+      continue
+
+    let value = ""
+
+    if (source_component.ftype === "simple_resistor")
+      value = si((source_component as SourceSimpleResistor).resistance)
+    if (source_component.ftype === "simple_capacitor")
+      value = si((source_component as SourceSimpleCapacitor).capacitance)
+    if (source_component.ftype === "simple_inductor")
+      value = si((source_component as SourceSimpleInductor).inductance)
+
+    const comment =
+      getManufacturerPartNumberComment(part_info.manufacturer_mpn_pairs) ||
+      trimText(source_component.manufacturer_part_number)
+
+    const isDoNotPlace = Boolean(
+      (elm as PcbComponent & { do_not_place?: boolean }).do_not_place,
+    )
+
+    const sourceSupplierPartNumberColumns =
+      source_component.supplier_part_numbers
+        ? convertSupplierPartNumbersIntoColumns(
+            source_component.supplier_part_numbers,
+          )
+        : undefined
+    const resolvedSupplierPartNumberColumns = trimColumnValues(
+      part_info.supplier_part_number_columns,
+    )
+    const supplier_part_number_columns = isDoNotPlace
+      ? undefined
+      : getJlcpcbPartNumber(resolvedSupplierPartNumberColumns)
+        ? resolvedSupplierPartNumberColumns
+        : sourceSupplierPartNumberColumns
+    const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
+    const footprint = trimText(
+      part_info.footprint || cad_component?.footprinter_string || "",
+    )
+    const trimmedValue = trimText(value)
+
+    bom.push({
+      // TODO, use designator from source_component when it's introduced
+      designator: trimText(source_component.name ?? elm.pcb_component_id),
+      comment: trimText(isDoNotPlace ? "DNP" : comment || trimmedValue),
+      value: trimText(isDoNotPlace ? "DNP" : trimmedValue || jlcpcbPartNumber),
+      footprint: trimText(footprint || jlcpcbPartNumber),
+      supplier_part_number_columns,
+    })
+  }
+
+  return bom
+}
+
+function convertSupplierPartNumbersIntoColumns(
+  supplier_part_numbers: Partial<Record<SupplierName, string[]>> | undefined,
+): BomRow["supplier_part_number_columns"] {
+  const partNumber =
+    getFirstSupplierPartNumber(supplier_part_numbers?.lcsc) ||
+    getFirstSupplierPartNumber(supplier_part_numbers?.jlcpcb)
+
+  return partNumber ? { "JLCPCB Part #": partNumber } : {}
+}
+
+function si(v: string | number | undefined | null) {
+  if (v === null || v === undefined) return ""
+  if (typeof v === "string") return v
+  return formatSI(v)
+}
+
+export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
+  const csv_data = bom_rows.map((row) => {
+    const supplier_part_number_columns = row.supplier_part_number_columns
+    const sanitized_supplier_part_number_columns = Object.fromEntries(
+      Object.entries(supplier_part_number_columns || {}).map(([key, value]) => [
+        sanitizeCsvText(trimText(key)),
+        sanitizeCsvText(trimText(value)),
+      ]),
+    )
+
+    const jlcpcbPartNumber = getJlcpcbPartNumber(
+      row.supplier_part_number_columns,
+    )
+
+    return {
+      Designator: sanitizeCsvText(trimText(row.designator)),
+      Comment: sanitizeCsvText(trimText(row.comment)),
+      Value: sanitizeCsvText(trimText(row.value) || jlcpcbPartNumber),
+      Footprint:
+        sanitizeCsvText(trimText(row.footprint) || jlcpcbPartNumber) || " ",
+      ...sanitized_supplier_part_number_columns,
+    }
+  })
+
+  const columnHeaders: string[] = [
+    "Designator",
+    "Comment",
+    "Value",
+    "Footprint",
+  ]
+  for (const row of csv_data) {
+    for (const key in row) {
+      if (!columnHeaders.includes(key)) {
+        columnHeaders.push(key)
+      }
+    }
+  }
+
+  return Papa.unparse(csv_data, {
+    columns: columnHeaders,
+    newline: "\r\n",
+    quotes: true,
+  })
+}
