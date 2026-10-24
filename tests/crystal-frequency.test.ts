@@ -15,61 +15,52 @@ const macroSixCrystal: AnyCircuitElement[] = JSON.parse(
   readFileSync(`${import.meta.dir}/assets/macro-six-crystal.json`, "utf8"),
 )
 
-test.failing(
-  "exports Watchy crystal frequencies into BOM Value and Comment",
-  async () => {
-    const rows = await convertCircuitJsonToBomRows({
-      circuitJson: watchyCrystals,
-    })
+test("exports Watchy crystal frequencies into BOM Value and Comment", async () => {
+  const rows = await convertCircuitJsonToBomRows({
+    circuitJson: watchyCrystals,
+  })
 
-    expect(rows).toHaveLength(2)
-    expect(rows.find((row) => row.designator === "Y1")).toMatchObject({
-      value: "32.768k",
-      comment: "32.768k",
-    })
-    expect(rows.find((row) => row.designator === "Y2")).toMatchObject({
-      value: "40M",
-      comment: "40M",
-    })
-  },
-)
+  expect(rows).toHaveLength(2)
+  expect(rows.find((row) => row.designator === "Y1")).toMatchObject({
+    value: "32768Hz",
+    comment: "32768Hz",
+  })
+  expect(rows.find((row) => row.designator === "Y2")).toMatchObject({
+    value: "40000000Hz",
+    comment: "40000000Hz",
+  })
+})
 
-test.failing("exports Watchy crystal frequencies into CSV", async () => {
+test("exports Watchy crystal frequencies into CSV", async () => {
   const rows = await convertCircuitJsonToBomRows({
     circuitJson: watchyCrystals,
   })
   const csv = convertBomRowsToCsv(rows)
 
-  expect(csv).toContain('"Y1","32.768k","32.768k"')
-  expect(csv).toContain('"Y2","40M","40M"')
+  expect(csv).toContain('"Y1","32768Hz","32768Hz"')
+  expect(csv).toContain('"Y2","40000000Hz","40000000Hz"')
 })
 
-test.failing(
-  "preserves the MTR crystal MPN while exporting frequency",
-  async () => {
-    const rows = await convertCircuitJsonToBomRows({ circuitJson: mtrCrystal })
+test("preserves the MTR crystal MPN while exporting frequency", async () => {
+  const rows = await convertCircuitJsonToBomRows({ circuitJson: mtrCrystal })
 
-    expect(rows).toHaveLength(1)
-    expect(rows[0].comment).toBe("8Z-12.000MAAJ-T")
-    expect(rows[0].value).toBe("12M")
-  },
-)
+  expect(rows).toHaveLength(1)
+  expect(rows[0].comment).toBe("8Z-12.000MAAJ-T")
+  expect(rows[0].value).toBe("12000000Hz")
+})
 
-test.failing(
-  "keeps supplier numbers separate from crystal frequency",
-  async () => {
-    const rows = await convertCircuitJsonToBomRows({
-      circuitJson: macroSixCrystal,
-    })
+test("keeps supplier numbers separate from crystal frequency", async () => {
+  const rows = await convertCircuitJsonToBomRows({
+    circuitJson: macroSixCrystal,
+  })
 
-    expect(rows).toHaveLength(1)
-    expect(rows[0].comment).toBe("X322516MLB4SI")
-    expect(rows[0].supplier_part_number_columns).toEqual({
-      "JLCPCB Part #": "C13738",
-    })
-    expect(rows[0].value).toBe("16M")
-  },
-)
+  expect(rows).toHaveLength(1)
+  expect(rows[0].comment).toBe("X322516MLB4SI")
+  expect(rows[0].supplier_part_number_columns).toEqual({
+    "JLCPCB Part #": "C13738",
+  })
+  expect(rows[0].value).toBe("16000000Hz")
+})
 
 test("retains the published crystal identities", async () => {
   const watchyRows = await convertCircuitJsonToBomRows({
@@ -85,4 +76,22 @@ test("retains the published crystal identities", async () => {
   expect(macroSixRows[0].supplier_part_number_columns).toEqual({
     "JLCPCB Part #": "C13738",
   })
+})
+
+test("preserves a resolved crystal MPN in rows and CSV", async () => {
+  const rows = await convertCircuitJsonToBomRows({
+    circuitJson: macroSixCrystal,
+    resolvePart: async () => ({
+      manufacturer_mpn_pairs: [{ manufacturer: "Example", mpn: "XTAL-16M" }],
+    }),
+  })
+
+  expect(rows[0]).toMatchObject({
+    value: "16000000Hz",
+    comment: "XTAL-16M",
+    supplier_part_number_columns: { "JLCPCB Part #": "C13738" },
+  })
+  expect(convertBomRowsToCsv(rows)).toContain(
+    '"Y1","XTAL-16M","16000000Hz","C13738","C13738"',
+  )
 })
