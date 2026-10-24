@@ -3,6 +3,7 @@ import type {
   PcbComponent,
   SourceComponentBase,
   SourceSimpleCapacitor,
+  SourceSimpleCrystal,
   SourceSimpleInductor,
   SourceSimpleResistor,
   SupplierName,
@@ -137,6 +138,8 @@ export const convertCircuitJsonToBomRows = async ({
       value = si((source_component as SourceSimpleCapacitor).capacitance)
     if (source_component.ftype === "simple_inductor")
       value = si((source_component as SourceSimpleInductor).inductance)
+    if (source_component.ftype === "simple_crystal")
+      value = si((source_component as SourceSimpleCrystal).frequency)
 
     const comment =
       getManufacturerPartNumberComment(part_info.manufacturer_mpn_pairs) ||
