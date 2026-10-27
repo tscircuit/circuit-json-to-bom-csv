@@ -7,9 +7,6 @@ import type {
   SourceSimpleResistor,
   SupplierName,
 } from "circuit-json"
-// @ts-ignore
-import { formatSI } from "format-si-prefix"
-
 import Papa from "papaparse"
 import { isBareMountingHole } from "./is-bare-mounting-hole"
 import { sanitizeCsvText } from "./sanitize-csv-text"
@@ -189,10 +186,40 @@ function convertSupplierPartNumbersIntoColumns(
   return partNumber ? { "JLCPCB Part #": partNumber } : {}
 }
 
+const siPrefixes = [
+  "y",
+  "z",
+  "a",
+  "f",
+  "p",
+  "n",
+  "µ",
+  "m",
+  "",
+  "k",
+  "M",
+  "G",
+  "T",
+  "P",
+  "E",
+  "Z",
+  "Y",
+]
+const siValueFormatter = new Intl.NumberFormat("en-US", {
+  notation: "engineering",
+  useGrouping: false,
+  maximumSignificantDigits: 21,
+})
+
 function si(v: string | number | undefined | null) {
   if (v === null || v === undefined) return ""
   if (typeof v === "string") return v
-  return formatSI(v)
+  if (v === 0) return "0"
+
+  // BOM values must retain the specified value, not a rounded display value.
+  const [significand, exponent] = siValueFormatter.format(v).split("E")
+  const prefix = siPrefixes[Number(exponent) / 3 + 8]
+  return prefix === undefined ? String(v) : `${significand}${prefix}`
 }
 
 export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
