@@ -31,7 +31,7 @@ const macroSixFuse: AnyCircuitElement[] = [
   },
 ]
 
-test("repro: F1 BOM Value falls back to supplier number despite available fuse ratings", async () => {
+test("exports F1 current and voltage ratings while preserving part identity", async () => {
   const fuse = macroSixFuse.find(
     (element) => element.type === "source_component",
   )
@@ -42,16 +42,37 @@ test("repro: F1 BOM Value falls back to supplier number despite available fuse r
 
   const rows = await convertCircuitJsonToBomRows({ circuitJson: macroSixFuse })
   expect(rows).toHaveLength(1)
-  // Record the current omission, not a desired long-term Value convention.
-  // The manufacturer and supplier identifiers still select the correct part.
   expect(rows[0]).toMatchObject({
     designator: "F1",
     comment: "nSMD050",
-    value: "C69688",
+    value: "0.5A / 6V",
     supplier_part_number_columns: { "JLCPCB Part #": "C69688" },
   })
   expect(convertBomRowsToCsv(rows)).toMatchInlineSnapshot(`
     "\"Designator\",\"Comment\",\"Value\",\"Footprint\",\"JLCPCB Part #\"
-    \"F1\",\"nSMD050\",\"C69688\",\"C69688\",\"C69688\""
+    \"F1\",\"nSMD050\",\"0.5A / 6V\",\"C69688\",\"C69688\""
   `)
+})
+
+test("preserves fractional fuse ratings and resolved part identity", async () => {
+  const rows = await convertCircuitJsonToBomRows({
+    circuitJson: macroSixFuse.map((element) =>
+      element.type === "source_component" && element.ftype === "simple_fuse"
+        ? { ...element, current_rating_amps: 0.0625, voltage_rating_volts: 63 }
+        : element,
+    ),
+    resolvePart: async () => ({
+      manufacturer_mpn_pairs: [{ manufacturer: "Example", mpn: "FUSE-0625" }],
+      supplier_part_number_columns: { "JLCPCB Part #": "C12345" },
+    }),
+  })
+
+  expect(rows[0]).toMatchObject({
+    value: "0.0625A / 63V",
+    comment: "FUSE-0625",
+    supplier_part_number_columns: { "JLCPCB Part #": "C12345" },
+  })
+  expect(convertBomRowsToCsv(rows)).toContain(
+    '"F1","FUSE-0625","0.0625A / 63V"',
+  )
 })
