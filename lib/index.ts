@@ -138,6 +138,14 @@ export const convertCircuitJsonToBomRows = async ({
     if (source_component.ftype === "simple_inductor")
       value = si((source_component as SourceSimpleInductor).inductance)
 
+    if (source_component.ftype === "simple_fuse") {
+      const fuse = source_component as Extract<
+        AnyCircuitElement,
+        { ftype: "simple_fuse" }
+      >
+      value = `${fuse.current_rating_amps}A / ${fuse.voltage_rating_volts}V`
+    }
+
     const comment =
       getManufacturerPartNumberComment(part_info.manufacturer_mpn_pairs) ||
       trimText(source_component.manufacturer_part_number)
