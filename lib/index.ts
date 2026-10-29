@@ -93,20 +93,33 @@ export const convertCircuitJsonToBomRows = async ({
   }) => Promise<ResolvedPart | null>
 }): Promise<BomRow[]> => {
   const bom: BomRow[] = []
+  const sourceComponents = new Map<string, SourceComponentBase>()
+  const cadComponents = new Map<
+    string,
+    Extract<AnyCircuitElement, { type: "cad_component" }>
+  >()
+  for (const element of circuitJson) {
+    // Preserve the first matching record, as Array.find did.
+    if (
+      element.type === "source_component" &&
+      !sourceComponents.has(element.source_component_id)
+    ) {
+      sourceComponents.set(element.source_component_id, element)
+    } else if (
+      element.type === "cad_component" &&
+      element.pcb_component_id &&
+      !cadComponents.has(element.pcb_component_id)
+    ) {
+      cadComponents.set(element.pcb_component_id, element)
+    }
+  }
+
   for (const elm of circuitJson) {
     if (elm.type !== "pcb_component") continue
     if (elm.do_not_place) continue
 
-    const source_component = circuitJson.find(
-      (e) =>
-        e.type === "source_component" &&
-        e.source_component_id === elm.source_component_id,
-    ) as any as SourceComponentBase
-    const cad_component = circuitJson.find(
-      (e) =>
-        e.type === "cad_component" &&
-        e.pcb_component_id === elm.pcb_component_id,
-    ) as any
+    const source_component = sourceComponents.get(elm.source_component_id)
+    const cad_component = cadComponents.get(elm.pcb_component_id)
 
     if (!source_component) continue
     if (isTestPoint(source_component)) continue
