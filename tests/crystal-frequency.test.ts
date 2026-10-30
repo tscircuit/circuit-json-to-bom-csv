@@ -22,7 +22,7 @@ const crystalCircuit: AnyCircuitElement[] = [
   },
 ]
 
-test.failing("exports crystal frequency into BOM rows and CSV", async () => {
+test("exports crystal frequency into BOM rows and CSV", async () => {
   const rows = await convertCircuitJsonToBomRows({
     circuitJson: crystalCircuit,
   })
@@ -36,7 +36,7 @@ test.failing("exports crystal frequency into BOM rows and CSV", async () => {
   expect(convertBomRowsToCsv(rows)).toContain('"Y1","32.8k","32.8k"')
 })
 
-test.failing("preserves resolved crystal MPN and supplier number", async () => {
+test("preserves resolved crystal MPN and supplier number", async () => {
   const rows = await convertCircuitJsonToBomRows({
     circuitJson: crystalCircuit,
     resolvePart: async () => ({
