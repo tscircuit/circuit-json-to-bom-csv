@@ -31,7 +31,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "format-si-prefix": "^0.3.2",
     "lucide-react": "^1.23.0",
     "papaparse": "^5.4.1",
     "react": "^19.2.7",
