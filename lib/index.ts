@@ -96,7 +96,6 @@ export const convertCircuitJsonToBomRows = async ({
   const bom: BomRow[] = []
   for (const elm of circuitJson) {
     if (elm.type !== "pcb_component") continue
-    if (elm.do_not_place) continue
 
     const source_component = circuitJson.find(
       (e) =>
