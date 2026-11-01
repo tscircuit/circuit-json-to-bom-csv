@@ -172,9 +172,9 @@ export const convertCircuitJsonToBomRows = async ({
         ? resolvedSupplierPartNumberColumns
         : sourceSupplierPartNumberColumns
     const jlcpcbPartNumber = getJlcpcbPartNumber(supplier_part_number_columns)
-    const footprint = trimText(
-      part_info.footprint || cad_component?.footprinter_string || "",
-    )
+    const footprint =
+      trimText(part_info.footprint) ||
+      trimText(cad_component?.footprinter_string)
     const trimmedValue = trimText(value)
 
     bom.push({
