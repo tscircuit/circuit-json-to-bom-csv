@@ -1,77 +1,54 @@
 import type {
   AnyCircuitElement,
-  BomSource,
+  CadAssemblyBomItem,
   SourceComponentBase,
   SourceGroup,
+  SupplierName,
 } from "circuit-json"
 import { convertCircuitJsonToBomRows, type BomRow } from "./index"
 
-/** A physical component or an electrical subcircuit used as a display group. */
+/** An explicit assembly item, a fallback PCB item, or a structural display group. */
 export interface AssemblyBomNode {
   id: string
+  kind: "assembly_bom_item" | "pcb_component" | "subcircuit"
   name: string
+  cad_assembly_bom_item_id?: string
   source_component_id?: string
   source_group_id?: string
+  cad_component_ids?: string[]
   /** Local count per parent. */
   quantity: number
-  /** Count for one complete root build, including all ancestor quantities. */
+  /** Count for one root build, including ancestor quantities. */
   total_quantity: number
-  assembly_mode: "build" | "buy"
-  /** False beneath a purchased assembly; retained for inspection only. */
-  included_in_purchase: boolean
-  sources: BomSource[]
+  supplier_part_numbers?: SourceComponentBase["supplier_part_numbers"]
+  purchase_urls: string[]
   row?: BomRow
   children: AssemblyBomNode[]
 }
 
-const nonPcbTypes = new Set([
-  "subassembly",
-  "printedpart",
-  "interconnect",
-  "motor",
-])
-
-const getSources = (source: SourceComponentBase): BomSource[] => {
-  const explicit = source.bom_sources ?? []
-  const legacy: BomSource[] = Object.entries(
-    source.supplier_part_numbers ?? {},
-  ).flatMap(([supplier_name, numbers]) =>
-    (numbers ?? []).map((supplier_part_number) => ({
-      supplier_name,
-      supplier_part_number,
-    })),
-  )
-  const seen = new Set<string>()
-  return [...explicit, ...legacy]
-    .map((option) => ({
-      ...option,
-      supplier_name: option.supplier_name.trim(),
-      ...(option.supplier_part_number !== undefined && {
-        supplier_part_number: option.supplier_part_number.trim(),
-      }),
-      ...(option.url !== undefined && { url: option.url.trim() }),
-    }))
-    .filter(
-      (option) =>
-        option.supplier_name && (option.supplier_part_number || option.url),
-    )
-    .filter((option) => {
-      const key = JSON.stringify([
-        option.supplier_name,
-        option.supplier_part_number,
-        option.url,
-      ])
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .map((option) => ({ ...option }))
+const normalizePartNumbers = (
+  numbers: SourceComponentBase["supplier_part_numbers"],
+) => {
+  if (!numbers) return undefined
+  const normalized: NonNullable<SourceComponentBase["supplier_part_numbers"]> =
+    {}
+  for (const supplier of Object.keys(numbers) as SupplierName[]) {
+    const parts = [
+      ...new Set(
+        (numbers[supplier] ?? [])
+          .map((number) => number.trim())
+          .filter(Boolean),
+      ),
+    ]
+    if (parts.length) normalized[supplier] = parts
+  }
+  return normalized
 }
 
 /**
- * Build a BOM tree without changing the manufacturing CSV contract. Explicit
- * physical ownership wins over electrical grouping. Only subcircuits become
- * display groups; ordinary layout groups are traversed but not displayed.
+ * Explicit assembly BOM entries own their nesting and quantities. PCB items not
+ * represented by an explicit entry remain available under electrical subcircuits.
+ * Geometry references identify represented components; they never set quantity.
  */
 export const convertCircuitJsonToAssemblyBom = async ({
   circuitJson,
@@ -87,28 +64,74 @@ export const convertCircuitJsonToAssemblyBom = async ({
   )
   const sources = new Map<string, SourceComponentBase>()
   const groups = new Map<string, SourceGroup>()
-  const pcbSources = new Set<string>()
+  const cadSources = new Map<string, string>()
+  const items = new Map<string, CadAssemblyBomItem>()
   for (const element of circuitJson) {
     if (element.type === "source_component") {
       if (sources.has(element.source_component_id))
         throw new Error("Duplicate source component in assembly BOM")
       sources.set(element.source_component_id, element)
-    }
-    if (element.type === "source_group")
+    } else if (element.type === "source_group") {
+      if (groups.has(element.source_group_id))
+        throw new Error("Duplicate source group in assembly BOM")
       groups.set(element.source_group_id, element)
-    if (element.type === "pcb_component")
-      pcbSources.add(element.source_component_id)
+    } else if (element.type === "cad_component") {
+      if (cadSources.has(element.cad_component_id))
+        throw new Error("Duplicate CAD component in assembly BOM")
+      cadSources.set(element.cad_component_id, element.source_component_id)
+    } else if (element.type === "cad_assembly_bom_item") {
+      if (items.has(element.cad_assembly_bom_item_id))
+        throw new Error("Duplicate assembly BOM item")
+      items.set(element.cad_assembly_bom_item_id, element)
+    }
   }
 
   const nodes = new Map<string, AssemblyBomNode>()
   const parents = new Map<string, string>()
-  const creating = new Set<string>()
+  const representedSources = new Set<string>()
+  for (const item of items.values()) {
+    if (!Number.isSafeInteger(item.quantity) || item.quantity <= 0)
+      throw new Error("BOM quantities must be positive safe integers")
+    const linkedSources = new Set<string>()
+    if (item.source_component_id) linkedSources.add(item.source_component_id)
+    for (const cadId of item.cad_component_ids ?? []) {
+      const sourceId = cadSources.get(cadId)
+      if (sourceId) linkedSources.add(sourceId)
+    }
+    for (const sourceId of linkedSources) representedSources.add(sourceId)
+    // Multiple referenced components do not imply one shared part/footprint.
+    const sourceId =
+      item.source_component_id ??
+      (linkedSources.size === 1 ? [...linkedSources][0] : undefined)
+    const source = sourceId ? sources.get(sourceId) : undefined
+    const id = `bom:${item.cad_assembly_bom_item_id}`
+    nodes.set(id, {
+      id,
+      kind: "assembly_bom_item",
+      name: item.name,
+      cad_assembly_bom_item_id: item.cad_assembly_bom_item_id,
+      source_component_id: sourceId,
+      cad_component_ids: item.cad_component_ids
+        ? [...item.cad_component_ids]
+        : undefined,
+      quantity: item.quantity,
+      total_quantity: item.quantity,
+      supplier_part_numbers: normalizePartNumbers(
+        item.supplier_part_numbers ?? source?.supplier_part_numbers,
+      ),
+      purchase_urls: [...new Set(item.purchase_urls ?? [])],
+      row: sourceId ? rowsBySource.get(sourceId) : undefined,
+      children: [],
+    })
+    if (item.parent_cad_assembly_bom_item_id)
+      parents.set(id, `bom:${item.parent_cad_assembly_bom_item_id}`)
+  }
+
   const subcircuitGroups = new Map(
     [...groups.values()]
       .filter((g) => g.is_subcircuit && g.subcircuit_id)
       .map((g) => [g.subcircuit_id!, g.source_group_id]),
   )
-
   const ensureGroup = (
     groupId: string | undefined,
     seen = new Set<string>(),
@@ -128,13 +151,12 @@ export const convertCircuitJsonToAssemblyBom = async ({
     if (!nodes.has(id)) {
       nodes.set(id, {
         id,
+        kind: "subcircuit",
         name: group.name || "Unnamed subcircuit",
         source_group_id: groupId,
         quantity: 1,
         total_quantity: 1,
-        assembly_mode: "build",
-        included_in_purchase: true,
-        sources: [],
+        purchase_urls: [],
         children: [],
       })
       if (parent) parents.set(id, parent)
@@ -142,75 +164,51 @@ export const convertCircuitJsonToAssemblyBom = async ({
     return id
   }
 
-  const ensureSource = (source: SourceComponentBase): string => {
-    const id = `component:${source.source_component_id}`
-    if (creating.has(id)) throw new Error("Cycle in physical assembly ancestry")
-    if (nodes.has(id)) return id
-    creating.add(id)
-    const quantity = source.bom_quantity ?? 1
-    if (!Number.isSafeInteger(quantity) || quantity <= 0)
-      throw new Error("BOM quantities must be positive safe integers")
-    const physicalParent = sources.get(source.parent_source_component_id ?? "")
-    const parent = physicalParent
-      ? ensureSource(physicalParent)
-      : ensureGroup(
-          source.source_group_id ??
-            subcircuitGroups.get(source.subcircuit_id ?? ""),
-        )
+  for (const row of rows) {
+    const sourceId = row.source_component_id!
+    if (representedSources.has(sourceId)) continue
+    const source = sources.get(sourceId)!
+    const id = `component:${sourceId}`
+    const parent = ensureGroup(
+      source.source_group_id ??
+        subcircuitGroups.get(source.subcircuit_id ?? ""),
+    )
     nodes.set(id, {
       id,
+      kind: "pcb_component",
       name: source.display_name || source.name || "Unnamed component",
-      source_component_id: source.source_component_id,
-      quantity,
-      total_quantity: quantity,
-      assembly_mode: source.bom_assembly_mode ?? "buy",
-      included_in_purchase: true,
-      sources: getSources(source),
-      row: rowsBySource.get(source.source_component_id),
+      source_component_id: sourceId,
+      quantity: 1,
+      total_quantity: 1,
+      supplier_part_numbers: normalizePartNumbers(source.supplier_part_numbers),
+      purchase_urls: [],
+      row,
       children: [],
     })
     if (parent) parents.set(id, parent)
-    creating.delete(id)
-    return id
   }
 
-  for (const source of sources.values()) {
-    const hasPcb = pcbSources.has(source.source_component_id)
-    if (
-      rowsBySource.has(source.source_component_id) ||
-      (!hasPcb &&
-        (nonPcbTypes.has(source.ftype ?? "") ||
-          source.bom_sources !== undefined ||
-          source.bom_assembly_mode !== undefined))
-    )
-      ensureSource(source)
+  const resolved = new Set<string>()
+  const resolving = new Set<string>()
+  const resolveQuantity = (node: AssemblyBomNode): number => {
+    if (resolved.has(node.id)) return node.total_quantity
+    if (resolving.has(node.id))
+      throw new Error("Cycle in assembly BOM ancestry")
+    resolving.add(node.id)
+    const parent = nodes.get(parents.get(node.id) ?? "")
+    node.total_quantity = node.quantity * (parent ? resolveQuantity(parent) : 1)
+    if (!Number.isSafeInteger(node.total_quantity))
+      throw new Error("Assembly BOM quantity exceeds the safe integer range")
+    resolving.delete(node.id)
+    resolved.add(node.id)
+    return node.total_quantity
   }
-
   const roots: AssemblyBomNode[] = []
   for (const node of nodes.values()) {
+    resolveQuantity(node)
     const parent = nodes.get(parents.get(node.id) ?? "")
     if (parent) parent.children.push(node)
     else roots.push(node)
   }
-  const resolveQuantities = (
-    node: AssemblyBomNode,
-    parentQuantity: number,
-    included: boolean,
-  ) => {
-    const source = sources.get(node.source_component_id ?? "")
-    if (node.children.length && !source?.bom_assembly_mode)
-      node.assembly_mode = "build"
-    node.total_quantity = node.quantity * parentQuantity
-    if (!Number.isSafeInteger(node.total_quantity))
-      throw new Error("Assembly BOM quantity exceeds the safe integer range")
-    node.included_in_purchase = included
-    for (const child of node.children)
-      resolveQuantities(
-        child,
-        node.total_quantity,
-        included && node.assembly_mode === "build",
-      )
-  }
-  for (const root of roots) resolveQuantities(root, 1, true)
   return roots
 }

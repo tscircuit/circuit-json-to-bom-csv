@@ -78,29 +78,37 @@ Returns a CSV string representation of the BOM.
 ## Assembly BOM
 
 `convertCircuitJsonToAssemblyBom({ circuitJson })` returns a tree of
-`AssemblyBomNode` records, including assembly materials without PCB footprints.
-Nodes preserve source IDs, purchasing sources, local and accumulated quantities,
-and existing PCB row details. This API does not perform network requests.
+`AssemblyBomNode` records from `cad_assembly_bom_item` entries and existing PCB
+materials. It performs no network requests.
 
-Physical `parent_source_component_id` takes precedence over electrical groups.
-Otherwise, `source_group` records marked `is_subcircuit` become display groups;
-ordinary layout groups are transparent. Missing parents fall back to electrical
-grouping or the root; cycles and duplicate component IDs report errors.
+Explicit BOM entries retain their IDs, names, supplier identifiers, all
+`purchase_urls`, and optional CAD/source references. Their parent BOM-item IDs
+form the tree; positive integer quantities multiply through ancestors. Geometry
+count never changes the quantity. Missing parents leave the entry at the root;
+cycles, duplicate identities and unsafe quantities report errors.
 
-`bom_assembly_mode: "buy"` keeps children inspectable but marks them
-`included_in_purchase: false`. A built assembly sums its descendants; a purchased
-assembly uses its own quote. Consumers must not count both. Source arrays contain
-alternative purchasing options, not additional materials. Quantities are integer
-item counts for one root build, not manufacturing panel counts or length units.
+An explicit entry replaces fallback PCB rows associated with its source or CAD
+references. It can reuse the linked source's part numbers and PCB row details,
+but its own part-number map takes precedence, including an explicitly empty map.
+Separate explicit uses of the same source retain their separate BOM identities.
+Unrepresented PCB parts retain their existing exclusions and are grouped under
+source groups marked `is_subcircuit`. Ordinary layout groups remain transparent.
+Source/CAD geometry alone does not introduce non-PCB BOM materials.
 
-The existing manufacturing rows and CSV are unchanged by default. Opt into
-`convertCircuitJsonToBomRows({ circuitJson, includeSourceIds: true })` when stable
-component identity is needed; IDs are never serialized into the manufacturing CSV.
-PCB exclusions (DNP, test points and bare mounting holes) still apply.
+`kind` distinguishes explicit `assembly_bom_item` entries, fallback `pcb_component`
+items, and structural `subcircuit` display rows. The converter does not prescribe
+purchasing modes or suppress descendant costs. Consumers can quote each material
+entry once; display groups have no independent material cost. Product links do
+not select or correspond positionally to supplier identifiers.
 
-This draft pins the schema preview from tscircuit/circuit-json#958. Replace the
-preview with its published version before merging. The PR preview workflow lets
-Runframe review and test this API before the converter is released.
+The existing manufacturing rows and CSV retain their default output. Opt into
+`convertCircuitJsonToBomRows({ circuitJson, includeSourceIds: true })` for stable
+component identity; those IDs are never serialized into the manufacturing CSV.
+Explicit BOM entries do not add items to the manufacturing CSV.
+
+This API uses released `circuit-json@0.0.543`, including the schema merged in
+[tscircuit/circuit-json#958](https://github.com/tscircuit/circuit-json/pull/958).
+The PR preview workflow supports downstream UI review before converter release.
 
 ## License
 
