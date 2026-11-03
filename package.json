@@ -24,7 +24,7 @@
     "@types/papaparse": "^5.3.14",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "circuit-json": "^0.0.265",
+    "circuit-json": "https://pkg.pr.new/tscircuit/circuit-json/circuit-json@adfafe74ab33d5410d9d46417f58ba127a2acae9",
     "tsup": "^8.3.0"
   },
   "peerDependencies": {

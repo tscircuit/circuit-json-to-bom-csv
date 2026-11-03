@@ -11,6 +11,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_1",
         source_component_id: "source_component_1",
       } as PcbComponent,
@@ -38,6 +39,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "C1",
         source_component_id: "source_C1",
         width: 2,
@@ -69,11 +71,14 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_1",
         source_component_id: "source_component_1",
       } as PcbComponent,
       {
         type: "cad_component",
+        anchor_alignment: "center",
+        model_object_fit: "contain_within_bounds",
         pcb_component_id: "pcb_component_1",
         footprinter_string: "  0805  ",
       } as any,
@@ -107,6 +112,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_1",
         source_component_id: "source_component_1",
         do_not_place: true,
@@ -129,6 +135,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_1",
         source_component_id: "source_component_1",
       } as PcbComponent,
@@ -164,6 +171,7 @@ describe("convertCircuitJsonToBomRows", () => {
     const circuitJson: AnyCircuitElement[] = [
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_1",
         source_component_id: "source_component_1",
       } as PcbComponent,
@@ -176,6 +184,7 @@ describe("convertCircuitJsonToBomRows", () => {
       } as SourceComponentBase,
       {
         type: "pcb_component",
+        obstructs_within_bounds: true,
         pcb_component_id: "pcb_component_2",
         source_component_id: "source_component_2",
       } as PcbComponent,

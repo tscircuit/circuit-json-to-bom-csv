@@ -16,6 +16,7 @@ const mpu6050U1CircuitJson: AnyCircuitElement[] = [
   },
   {
     type: "pcb_component",
+    obstructs_within_bounds: true,
     pcb_component_id: "pcb_component_0",
     source_component_id: "source_component_0",
     center: { x: 0, y: -0.3500000000000001 },
@@ -27,6 +28,8 @@ const mpu6050U1CircuitJson: AnyCircuitElement[] = [
   },
   {
     type: "cad_component",
+    anchor_alignment: "center",
+    model_object_fit: "contain_within_bounds",
     cad_component_id: "cad_component_0",
     pcb_component_id: "pcb_component_0",
     source_component_id: "source_component_0",

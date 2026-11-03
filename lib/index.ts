@@ -17,7 +17,9 @@ import { sanitizeCsvText } from "./sanitize-csv-text"
 
 type SupplierPartNumberColumn = "JLCPCB Part #"
 
-interface BomRow {
+export interface BomRow {
+  /** Present only when includeSourceIds is requested. Never serialized to CSV. */
+  source_component_id?: string
   designator: string
   comment: string
   value: string
@@ -86,8 +88,10 @@ const isTestPoint = (source_component: SourceComponentBase): boolean =>
 export const convertCircuitJsonToBomRows = async ({
   circuitJson,
   resolvePart,
+  includeSourceIds = false,
 }: {
   circuitJson: AnyCircuitElement[]
+  includeSourceIds?: boolean
   resolvePart?: (part_info: {
     source_component: SourceComponentBase
     pcb_component: PcbComponent
@@ -178,6 +182,9 @@ export const convertCircuitJsonToBomRows = async ({
     const trimmedValue = trimText(value)
 
     bom.push({
+      ...(includeSourceIds && {
+        source_component_id: source_component.source_component_id,
+      }),
       // TODO, use designator from source_component when it's introduced
       designator: trimText(source_component.name ?? elm.pcb_component_id),
       comment: trimText(isDoNotPlace ? "DNP" : comment || trimmedValue),
@@ -189,6 +196,9 @@ export const convertCircuitJsonToBomRows = async ({
 
   return bom
 }
+
+export { convertCircuitJsonToAssemblyBom } from "./assembly-bom"
+export type { AssemblyBomNode } from "./assembly-bom"
 
 function convertSupplierPartNumbersIntoColumns(
   supplier_part_numbers: Partial<Record<SupplierName, string[]>> | undefined,

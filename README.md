@@ -75,6 +75,33 @@ Converts BOM rows to a CSV string.
 
 Returns a CSV string representation of the BOM.
 
+## Assembly BOM
+
+`convertCircuitJsonToAssemblyBom({ circuitJson })` returns a tree of
+`AssemblyBomNode` records, including assembly materials without PCB footprints.
+Nodes preserve source IDs, purchasing sources, local and accumulated quantities,
+and existing PCB row details. This API does not perform network requests.
+
+Physical `parent_source_component_id` takes precedence over electrical groups.
+Otherwise, `source_group` records marked `is_subcircuit` become display groups;
+ordinary layout groups are transparent. Missing parents fall back to electrical
+grouping or the root; cycles and duplicate component IDs report errors.
+
+`bom_assembly_mode: "buy"` keeps children inspectable but marks them
+`included_in_purchase: false`. A built assembly sums its descendants; a purchased
+assembly uses its own quote. Consumers must not count both. Source arrays contain
+alternative purchasing options, not additional materials. Quantities are integer
+item counts for one root build, not manufacturing panel counts or length units.
+
+The existing manufacturing rows and CSV are unchanged by default. Opt into
+`convertCircuitJsonToBomRows({ circuitJson, includeSourceIds: true })` when stable
+component identity is needed; IDs are never serialized into the manufacturing CSV.
+PCB exclusions (DNP, test points and bare mounting holes) still apply.
+
+This draft pins the schema preview from tscircuit/circuit-json#958. Replace the
+preview with its published version before merging. The PR preview workflow lets
+Runframe review and test this API before the converter is released.
+
 ## License
 
 This project is licensed under the MIT License.

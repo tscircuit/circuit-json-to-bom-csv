@@ -108,6 +108,9 @@ const preservedCases: Array<
       ...circuit,
       {
         type: "cad_component",
+        source_component_id: "source_mh1",
+        anchor_alignment: "center",
+        model_object_fit: "contain_within_bounds",
         cad_component_id: "cad_mh1",
         pcb_component_id: "pcb_mh1",
         position: { x: -15.5, y: -15.5, z: 0 },

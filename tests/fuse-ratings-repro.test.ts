@@ -20,6 +20,7 @@ const macroSixFuse: AnyCircuitElement[] = [
   },
   {
     type: "pcb_component",
+    obstructs_within_bounds: true,
     pcb_component_id: "pcb_component_6",
     source_component_id: "source_component_6",
     center: { x: -20, y: 27 },

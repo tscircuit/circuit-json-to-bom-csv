@@ -16,7 +16,7 @@ const resistorCircuit = (
     name: "R1",
     resistance: 1000,
     supplier_part_numbers,
-  } as SourceComponentBase,
+  },
   {
     type: "pcb_component",
     pcb_component_id: "pcb_component_1",

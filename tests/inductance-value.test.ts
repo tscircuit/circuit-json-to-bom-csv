@@ -7,6 +7,7 @@ const inductorCircuit = (supplierPartNumbers?: {
 }): AnyCircuitElement[] => [
   {
     type: "pcb_component",
+    obstructs_within_bounds: true,
     pcb_component_id: "pc_1",
     source_component_id: "sc_1",
     width: 1,
