@@ -43,6 +43,18 @@ const getSources = (source: SourceComponentBase): BomSource[] => {
   )
   const seen = new Set<string>()
   return [...explicit, ...legacy]
+    .map((option) => ({
+      ...option,
+      supplier_name: option.supplier_name.trim(),
+      ...(option.supplier_part_number !== undefined && {
+        supplier_part_number: option.supplier_part_number.trim(),
+      }),
+      ...(option.url !== undefined && { url: option.url.trim() }),
+    }))
+    .filter(
+      (option) =>
+        option.supplier_name && (option.supplier_part_number || option.url),
+    )
     .filter((option) => {
       const key = JSON.stringify([
         option.supplier_name,

@@ -158,3 +158,16 @@ test("missing parents remain visible and malformed ancestry fails clearly", asyn
     }),
   ).rejects.toThrow("Cycle")
 })
+
+test("blank legacy supplier entries cannot hide a valid purchasing option", async () => {
+  const [component] = await convertCircuitJsonToAssemblyBom({
+    circuitJson: [
+      part("module", {
+        supplier_part_numbers: { jlcpcb: ["", "  ", " C123 ", "C123"] },
+      }),
+    ],
+  })
+  expect(component.sources).toEqual([
+    { supplier_name: "jlcpcb", supplier_part_number: "C123" },
+  ])
+})
