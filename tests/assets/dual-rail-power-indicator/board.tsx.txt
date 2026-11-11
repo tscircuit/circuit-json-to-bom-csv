@@ -1,0 +1,30 @@
+type RailIndicatorProps = {
+  name: string
+  pcbX: number
+  schX: number
+  resistance: string
+  color: "green" | "blue"
+}
+
+const RailIndicator = ({ name, pcbX, schX, resistance, color }: RailIndicatorProps) => (
+  <group name={name} subcircuit pcbX={pcbX} pcbY={-2} schX={schX}>
+    <resistor name="R1" resistance={resistance} footprint="0805" pcbX={-3} schX={-1.5} />
+    <led name="D1" color={color} footprint="0805" pcbX={3} schX={1.5} />
+    <trace from=".R1 > .pin2" to=".D1 > .anode" />
+  </group>
+)
+
+export default () => (
+  <board width="44mm" height="24mm" autorouter="auto-local">
+    <pinheader name="J1" pinCount={3} pitch="2.54mm" footprint="pinrow3_nosquareplating" pinLabels={["V5", "GND", "V3V3"]} pcbY={6} schY={5} />
+    <RailIndicator name="Rail5V" pcbX={-11} schX={-5} resistance="1k" color="green" />
+    <RailIndicator name="Rail3V3" pcbX={11} schX={5} resistance="470" color="blue" />
+    <trace from=".J1 > .pin1" to=".Rail5V > .R1 > .pin1" />
+    <trace from=".J1 > .pin3" to=".Rail3V3 > .R1 > .pin1" />
+    <trace from=".J1 > .pin2" to=".Rail5V > .D1 > .cathode" />
+    <trace from=".J1 > .pin2" to=".Rail3V3 > .D1 > .cathode" />
+    <silkscreentext text="DUAL RAIL INDICATOR / REV A" fontSize={0.8} pcbY={10.5} />
+    <silkscreentext text="5V / GREEN" fontSize={0.9} pcbX={-11} pcbY={-7} />
+    <silkscreentext text="3V3 / BLUE" fontSize={0.9} pcbX={11} pcbY={-7} />
+  </board>
+)

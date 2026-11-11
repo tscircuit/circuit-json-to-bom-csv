@@ -1,0 +1,6 @@
+"Designator","Comment","Value","Footprint"
+"J1","","","pinrow3_nosquareplating"
+"R1","1k","1k","res0805"
+"D1","","","diode0805_color(green)"
+"R1","470","470","res0805"
+"D1","","","diode0805_color(blue)"
