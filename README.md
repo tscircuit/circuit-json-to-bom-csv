@@ -67,13 +67,22 @@ Converts Circuit JSON to BOM rows.
 
 Returns a Promise that resolves to an array of BOM rows.
 
-### `convertBomRowsToCsv(bomRows: BomRow[]): string`
+### `convertBomRowsToCsv(bomRows: BomRow[], options?: { groupByPart?: boolean; includeQuantity?: boolean }): string`
 
 Converts BOM rows to a CSV string.
 
 - `bomRows`: An array of BOM row objects.
+- `options.groupByPart` / `options.includeQuantity` (optional): When `true`, groups identical parts onto a single row using `Designators` and `Quantity` columns.
 
 Returns a CSV string representation of the BOM.
+
+### `convertCircuitJsonToGroupedBomRows(options: { circuitJson: AnyCircuitElement[], resolvePart?: Function }): Promise<GroupedBomRow[]>`
+
+Converts Circuit JSON into grouped BOM rows where identical parts share a single row with combined `designators` (for example `"R1, R2"`) and `quantity`.
+
+### `convertGroupedBomRowsToCsv(bomRows: GroupedBomRow[]): string`
+
+Serializes grouped BOM rows to CSV with `"Designators","Comment","Value","Footprint","Quantity"` (plus any supplier part number columns).
 
 ## Assembly BOM
 
