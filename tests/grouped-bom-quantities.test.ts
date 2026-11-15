@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import type {
   AnyCircuitElement,
   PcbComponent,
-  SourceComponentBase,
+  SourceSimpleResistor,
 } from "circuit-json"
 import {
   convertBomRowsToCsv,
@@ -29,7 +29,7 @@ test("groups identical components with combined designators and quantity", async
       supplier_part_numbers: {
         jlcpcb: ["C17513"],
       },
-    } as SourceComponentBase,
+    } as SourceSimpleResistor,
     {
       type: "pcb_component",
       obstructs_within_bounds: true,
@@ -45,7 +45,7 @@ test("groups identical components with combined designators and quantity", async
       supplier_part_numbers: {
         jlcpcb: ["C17513"],
       },
-    } as SourceComponentBase,
+    } as SourceSimpleResistor,
     {
       type: "pcb_component",
       obstructs_within_bounds: true,
@@ -61,7 +61,7 @@ test("groups identical components with combined designators and quantity", async
       supplier_part_numbers: {
         jlcpcb: ["C23162"],
       },
-    } as SourceComponentBase,
+    } as SourceSimpleResistor,
   ]
 
   const groupedRows = await convertCircuitJsonToGroupedBomRows({ circuitJson })
