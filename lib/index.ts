@@ -227,7 +227,7 @@ export const convertBomRowsToCsv = (bom_rows: BomRow[]): string => {
     )
 
     const jlcpcbPartNumber = getJlcpcbPartNumber(
-      row.supplier_part_number_columns,
+      sanitized_supplier_part_number_columns,
     )
 
     return {
